@@ -194,7 +194,7 @@ func TestApplyPromptRejectsNonYes(t *testing.T) {
 	if !strings.Contains(out, "  # app/thing will be created\n  # (needs approval)\n  + resource \"test_thing\" \"thing\" {\n") {
 		t.Errorf("stdout lacks the plan: %q", out)
 	}
-	if !strings.HasSuffix(out, "Needs approval:\n  + app/thing (test_thing)\nApply these changes? Only 'yes' is accepted: \n") {
+	if !strings.HasSuffix(out, "Needs approval:\n  + app/thing (test_thing)\nDo you want to perform these actions? Only 'yes' will be accepted: \nApply cancelled.\n") {
 		t.Errorf("stdout lacks the prompt with the changes to approve: %q", out)
 	}
 	if !strings.Contains(stderr.String(), engine.ErrNotApproved.Error()) || !strings.Contains(stderr.String(), "nothing was changed") {
@@ -585,11 +585,11 @@ func gatedProject(t *testing.T, text string) (dir, fx string) {
 }
 
 func TestApplyGatesByAutonomy(t *testing.T) {
-	// auto: no question, applied.
+	// auto: asks once like the others (ADR-033); "yes" applies.
 	dir, fx := gatedProject(t, "---\nautonomy: auto\n---\none thing")
 	fake := &fakeProvider{}
 	var stdout, stderr bytes.Buffer
-	code := reconcile(context.Background(), "apply", []string{"--fixtures", fx, dir}, strings.NewReader(""), &stdout, &stderr, fake.source, noPlanner)
+	code := reconcile(context.Background(), "apply", []string{"--fixtures", fx, dir}, strings.NewReader("yes\n"), &stdout, &stderr, fake.source, noPlanner)
 	if code != 0 || fake.applies != 1 {
 		t.Fatalf("auto: exit %d, applies %d (stderr %q)", code, fake.applies, stderr.String())
 	}
@@ -600,7 +600,7 @@ func TestApplyGatesByAutonomy(t *testing.T) {
 		}
 		return out + "  + resource \"test_thing\" \"thing\" {\n      + id   = (known after apply)\n      + name = \"x\"\n    }\n\n"
 	}
-	if want := thing("") + "Plan: 1 to add, 0 to change, 0 to destroy.\n" +
+	if want := thing("") + "Plan: 1 to add, 0 to change, 0 to destroy.\n" + approvePrompt + "\n" +
 		"app/thing: Creating...\napp/thing: Creation complete after 0s [id=thing-1]\n" +
 		"Apply complete! Resources: 1 added, 0 changed, 0 destroyed.\n"; stdout.String() != want {
 		t.Errorf("auto: stdout = %q, want %q", stdout.String(), want)
@@ -640,7 +640,7 @@ func TestApplyRefusalPrunesDependentsAndSummarizes(t *testing.T) {
 	root := t.TempDir()
 	dir := projectAt(t, root)
 	texts := map[string]string{
-		"base":  "---\nautonomy: approve\n---\na thing",
+		"base":  "---\nautonomy: observe\n---\na thing",
 		"app":   "---\nautonomy: auto\n---\na thing named after base's",
 		"other": "---\nautonomy: auto\n---\nanother thing",
 	}
@@ -656,13 +656,12 @@ func TestApplyRefusalPrunesDependentsAndSummarizes(t *testing.T) {
 
 	fake := &fakeProvider{}
 	var stdout, stderr bytes.Buffer
-	code := reconcile(context.Background(), "apply", []string{"--fixtures", fx, dir}, strings.NewReader("no\n"), &stdout, &stderr, fake.source, noPlanner)
+	code := reconcile(context.Background(), "apply", []string{"--yes", "--fixtures", fx, dir}, strings.NewReader(""), &stdout, &stderr, fake.source, noPlanner)
 	if code != 0 || fake.applies != 1 {
 		t.Fatalf("exit %d, applies %d (stderr %q)", code, fake.applies, stderr.String())
 	}
-	want := "Needs approval:\n  + base/thing (test_thing)\nApply these changes? Only 'yes' is accepted: \n" +
-		"other/thing: Creating...\nother/thing: Creation complete after 0s [id=thing-1]\n" +
-		"Not applied:\n  base/thing: not approved\n  app/thing: depends on base/thing\n" +
+	want := "other/thing: Creating...\nother/thing: Creation complete after 0s [id=thing-1]\n" +
+		"Not applied:\n  base/thing: observe\n  app/thing: depends on base/thing\n" +
 		"Apply complete! Resources: 1 added, 0 changed, 0 destroyed.\n"
 	if !strings.HasSuffix(stdout.String(), want) {
 		t.Errorf("stdout = %q, want it to end with %q", stdout.String(), want)
@@ -1035,5 +1034,55 @@ func TestOpenAINeedsModel(t *testing.T) {
 	stderr.Reset()
 	if _, err := parseReconcileFlags("apply", []string{dir}, &stderr); err != nil {
 		t.Errorf("PROSA_MODEL set: %v (stderr %q)", err, stderr.String())
+	}
+}
+
+func TestApplyAutoPlanAsksAndDeclineChangesNothing(t *testing.T) {
+	dir, fx := gatedProject(t, "---\nautonomy: auto\n---\none thing")
+	fake := &fakeProvider{}
+	var stdout, stderr bytes.Buffer
+	code := reconcile(context.Background(), "apply", []string{"--fixtures", fx, dir}, strings.NewReader("no\n"), &stdout, &stderr, fake.source, noPlanner)
+	if code != 1 || fake.applies != 0 {
+		t.Fatalf("exit %d, applies %d (stderr %q)", code, fake.applies, stderr.String())
+	}
+	if !strings.HasSuffix(stdout.String(), approvePrompt+"\nApply cancelled.\n") || strings.Contains(stdout.String(), "Needs approval") {
+		t.Errorf("stdout = %q", stdout.String())
+	}
+	if _, err := os.Stat(filepath.Join(dir, "prosa.lock.yaml")); !os.IsNotExist(err) {
+		t.Errorf("lock written after declining (stat err %v)", err)
+	}
+}
+
+func TestApplyYesAsksNothing(t *testing.T) {
+	dir, fx := gatedProject(t, "---\nautonomy: auto\n---\none thing")
+	fake := &fakeProvider{}
+	var stdout, stderr bytes.Buffer
+	code := reconcile(context.Background(), "apply", []string{"--yes", "--fixtures", fx, dir}, strings.NewReader(""), &stdout, &stderr, fake.source, noPlanner)
+	if code != 0 || fake.applies != 1 {
+		t.Fatalf("exit %d, applies %d (stderr %q)", code, fake.applies, stderr.String())
+	}
+	if strings.Contains(stdout.String(), "perform these actions") {
+		t.Errorf("--yes asked: %q", stdout.String())
+	}
+}
+
+func TestApplyPromptListsDestroy(t *testing.T) {
+	dir, fx := gatedProject(t, "---\nautonomy: auto\n---\none thing")
+	fake := &fakeProvider{}
+	var stdout, stderr bytes.Buffer
+	if code := reconcile(context.Background(), "apply", []string{"--yes", "--fixtures", fx, dir}, strings.NewReader(""), &stdout, &stderr, fake.source, noPlanner); code != 0 {
+		t.Fatalf("first apply: exit %d (stderr %q)", code, stderr.String())
+	}
+	text := "---\nautonomy: auto\n---\nnothing"
+	writeFile(t, filepath.Join(dir, "app.md"), text)
+	writeFile(t, fx, `[{"intent": "app", "hash": "`+sha256Of(text)+`", "resources": []}]`)
+	stdout.Reset()
+	stderr.Reset()
+	code := reconcile(context.Background(), "apply", []string{"--fixtures", fx, dir}, strings.NewReader("no\n"), &stdout, &stderr, fake.source, noPlanner)
+	if code != 1 {
+		t.Fatalf("exit %d, want 1 (stdout %q, stderr %q)", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Needs approval:\n  - app/thing (test_thing)") || !strings.HasSuffix(stdout.String(), approvePrompt+"\nApply cancelled.\n") {
+		t.Errorf("stdout = %q", stdout.String())
 	}
 }

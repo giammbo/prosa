@@ -39,7 +39,7 @@ func TestCommandsPrintTargetFirst(t *testing.T) {
 			var code int
 			switch cmd {
 			case "plan", "apply":
-				code = reconcile(context.Background(), cmd, []string{"--fixtures", fx, dir}, strings.NewReader(""), &stdout, &stderr, fake.source, noPlanner)
+				code = reconcile(context.Background(), cmd, []string{"--fixtures", fx, dir}, strings.NewReader("yes\n"), &stdout, &stderr, fake.source, noPlanner)
 			case "check":
 				code = checkCommand(context.Background(), []string{dir}, &stdout, &stderr, fake.source)
 			case "recover":

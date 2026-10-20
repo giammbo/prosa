@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- First run on real AWS (eu-west-1): create at the smallest sizes, resize, scale and destroy, with Claude as the planner.
+
+### Changed
+- `prosa apply` now always asks for confirmation before any change, like Terraform (`Do you want to perform these actions? Only 'yes' will be accepted:`), including for `autonomy: auto` intents; `--yes` skips it (ADR-033).
+
 ## [0.1.0] — 2026-10-20
 
 First public release. Tested against Moto (an AWS emulator); the run on real AWS is prepared but not executed yet.

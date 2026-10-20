@@ -8,7 +8,7 @@
 #
 # Variables:
 #   DEMO_PAUSE=1       wait for Enter after each step (to record the video)
-#   DEMO_AUTO=1        answer "yes" to the approval prompts
+#   DEMO_AUTO=1        answer "yes" to the apply confirmation
 #   PROSA_PLANNER=llm  use Claude (needs Anthropic credentials); default:
 #                      fixtures, that is the simulated states in
 #                      demo/fixtures.json. It is a complete run with apply on
@@ -159,7 +159,7 @@ prosa_fails() {
   [ "$rc" -ne 0 ] || die "'prosa $*' should have failed but succeeded"
 }
 
-# apply runs prosa apply, answering "yes" to the approval when DEMO_AUTO=1.
+# apply runs prosa apply, answering "yes" to the apply confirmation when DEMO_AUTO=1.
 apply() {
   local rc=0
   if [ "${DEMO_AUTO:-}" = "1" ]; then

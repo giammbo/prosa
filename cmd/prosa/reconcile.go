@@ -23,9 +23,9 @@ import (
 	"github.com/giammbo/prosa/internal/state"
 )
 
-// approvePrompt is what apply asks on stdin without --yes, after the list of
-// the changes that need an approval.
-const approvePrompt = "Apply these changes? Only 'yes' is accepted: "
+// approvePrompt is what apply asks once on stdin without --yes, before any
+// change, like Terraform (ADR-033).
+const approvePrompt = "Do you want to perform these actions? Only 'yes' will be accepted: "
 
 // reconcileFlags are the flags of plan, apply, check and recover, with
 // what the project and the AWS CLI's configuration add (ADR-029).
@@ -509,16 +509,27 @@ func runReconcile(ctx context.Context, cmd string, f reconcileFlags, stdin io.Re
 	if cmd == "plan" {
 		return nil
 	}
-	// Only the changes that need an approval are asked about; refused ones
-	// (observe, advise) are never applied, even with --yes.
-	approve := func(p *engine.Plan) bool {
-		if f.yes {
-			return true
+	// One question for the whole plan, before any change (ADR-033). Refused
+	// changes (observe, advise) are never applied, even with --yes. With no
+	// applicable change (no changes, or only a lock update) nothing is asked.
+	if !f.yes && p.Applicable() {
+		if len(p.ToApprove()) > 0 {
+			engine.RenderApproval(stdout, p, engine.RenderOptions{Color: color})
 		}
-		engine.RenderApproval(stdout, p, engine.RenderOptions{Color: color})
 		fmt.Fprint(stdout, approvePrompt)
-		return readYes(ctx, stdin, stdout)
+		if !readYes(ctx, stdin, stdout) {
+			fmt.Fprintln(stdout, "Apply cancelled.")
+			if e.Observer != nil && len(p.ToApprove()) > 0 {
+				names := make([]string, 0)
+				for _, c := range p.ToApprove() {
+					names = append(names, c.Intent+"/"+c.Key)
+				}
+				e.Observer.Approval(false, names)
+			}
+			return engine.ErrNotApproved
+		}
 	}
+	approve := func(*engine.Plan) bool { return true }
 	progress := newProgressPrinter(stdout, stderr, progressClock, color)
 	e.Progress = progress.handle
 	err = e.Apply(ctx, p, approve)

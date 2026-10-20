@@ -9,7 +9,7 @@
 
 ![prosa plan on the Moto demo](assets/plan.svg)
 
-> **Status: early.** Everything is tested against **Moto** (an AWS emulator), with simulated model conversations. The run on **real AWS** is prepared (`demo/aws/`) but has **not been executed yet**, and the planner has not been recorded against the real model. Do not point it at an account you care about.
+> **Status: early.** Tested end to end against **Moto** (an AWS emulator) and once on **real AWS** with the real model: a web app on ECS Fargate behind a load balancer, a Postgres RDS and a nightly job, created at the smallest sizes, resized, scaled and destroyed (46 resources, nothing left behind). Use a sandbox account, not one you care about.
 
 ## Install
 
@@ -52,7 +52,7 @@ The intents in the root (every `.md` except `README.md`) are the **base**; an en
 
 The environment file can have sections named after an intent (`## database`): the lines under one apply only to that intent, those before the first section apply to all of them. The base is planned once (its lock lives in the root); an environment costs only a model patch on top of that base, and if the base changes but the section does not, the patch is re-applied without calling the model (ADR-030). `prosa plan` never writes a lock: `apply` does, and the first `apply --env` plans the base first. A `## X` heading that is not the name of an intent (case does not matter), nor of one that the environment lock still has and that the run removes, is a warning on stderr (`prosa: warning: …`): its lines apply to no intent and the run goes on.
 
-Terraform/OpenTofu providers are the drivers (over gRPC, no HCL). Claude plans the desired state; the plan is computed by the provider, filtered by policy and autonomy, and destruction asks for approval. The full state of the resources lives in a client-side encrypted state store (rebuilding it from the labels on the resources is designed, not implemented: without the passphrase the store cannot be read, see below).
+Terraform/OpenTofu providers are the drivers (over gRPC, no HCL). Claude plans the desired state; the plan is computed by the provider, filtered by policy and autonomy, and `apply` asks for confirmation before any change. The full state of the resources lives in a client-side encrypted state store (rebuilding it from the labels on the resources is designed, not implemented: without the passphrase the store cannot be read, see below).
 
 ## Status
 
@@ -64,7 +64,9 @@ Terraform/OpenTofu providers are the drivers (over gRPC, no HCL). Claude plans t
 - **M6** environments as prose files (ADR-029): `--env`, per-environment lock and state, region and credentials from the AWS CLI, no `prosa.yaml`.
 - **M7** few tokens and any LLM (ADR-030, ADR-031): the base is planned once and an environment is a patch on it, with `## <intent>` sections in the environment file; `anthropic` or `openai` backend (local models).
 
-Tested on **Moto** (an AWS emulator): the demo 1 script, from plan to cleanup, with the simulated desired states in `demo/fixtures.json`; the e2e tests run under the same conditions. **Not done yet:** the run on real AWS (prepared, never executed) and recording the conversations with the real model (the test conversations are simulated). Next step: the AWS run.
+Tested on **Moto** (an AWS emulator): the demo 1 script, from plan to cleanup, with the simulated desired states in `demo/fixtures.json`; the e2e tests run under the same conditions (their model conversations are simulated).
+
+Run on **real AWS** (eu-west-1, with Claude as the planner): the base planned once (about 16k output tokens), the `staging` environment as a patch (about 4k), then one size up (RDS `db.t4g.micro` → `db.t4g.small` in place, Fargate 0.25 → 0.5 vCPU) and two replicas instead of one, each a small patch (1-2k tokens), and a full teardown of the 46 resources. Known gaps found there: `http_get` checks accept only HTTPS, and a check whose value an environment changes keeps its original sentence.
 
 ## Quick start on Moto
 
@@ -79,7 +81,7 @@ The script builds `bin/prosa`, creates a temporary project by copying `examples/
 
 | Variable | Effect |
 |---|---|
-| `DEMO_AUTO=1` | answers `yes` to approval prompts |
+| `DEMO_AUTO=1` | answers `yes` to the apply confirmation |
 | `DEMO_PAUSE=1` | waits for Enter after each step (for recording the video) |
 | `PROSA_PLANNER=llm` | uses Claude instead of the simulated states (default: `fixtures`): it is a full run with apply on Moto; the assertions of steps 2 and 3 (block, single change, approval) become warnings, because the model may not block or may also change `min_capacity` |
 | `PROSA_MOTO_URL` | Moto address (default `http://localhost:5555`, localhost only) |
@@ -139,7 +141,7 @@ prosa debug schema <namespace/name>[@version] <resource_type>
 
 - `init`: creates the `envs/` folder and a `.gitignore` that excludes `.prosa/` (or adds the line to the existing one); it does not touch what exists.
 - `plan`: computes and shows the plan (create, update, drift, destructions), without changing anything.
-- `apply`: applies the plan; it asks for `yes` for the changes that policy or the autonomy level put under approval (destruction by default); `--yes` answers for you.
+- `apply`: shows the plan and, like Terraform, asks once for the whole plan (`Do you want to perform these actions? Only 'yes' will be accepted:`) before any change; anything but `yes` cancels and nothing changes. The changes that policy or the autonomy level put under approval (destruction by default) are listed in the question. With no changes it asks nothing. `--yes` skips the question (like `-auto-approve`); `observe` and `advise` intents are never applied, even with `--yes`.
 - `check`: runs the checks written in the intents (`pass`, `skipped`, `fail`).
 - `recover`: after an interruption (Ctrl-C, crash) rebuilds the lock from the state store, for the intents whose state is ahead of the lock (and redoes it if it is missing or empty); then rerun `plan`.
 - `debug schema`: prints the schema of a provider resource.
@@ -184,7 +186,7 @@ The engine adds the `prosa/intent` tag to every resource and, with `--env`, `pro
 
 - **Where it points.** Every reconciliation command (`plan`/`apply`/`check`/`recover`) writes a `target:` line to stderr: the emulated endpoint from `PROSA_AWS_ENDPOINT` (`target: emulated endpoint http://localhost:5555 (region eu-south-1)`), or AWS (`target: AWS account from current credentials (region eu-south-1)`). Prosa does not check the account: if it is the wrong one you see it from the plan.
 - **Never AWS by mistake.** `--require-endpoint` (or `PROSA_REQUIRE_ENDPOINT=1`) refuses to start without `PROSA_AWS_ENDPOINT` (exit 2).
-- **Approvals.** The plan is mandatory; destruction asks for approval by default. Policy and autonomy are declared in the intents (ADR-022).
+- **Approvals.** The plan is mandatory and `apply` asks for one confirmation (`--yes` skips it); destruction is listed in it by default. Policy and autonomy are declared in the intents (ADR-022).
 - **Events without values.** The log reports actions, drifted attributes, approvals, tokens; never attribute values (ADR-023).
 - **Passphrase.** `PROSA_STATE_PASSPHRASE` encrypts the state store and is required. **If you lose it, the resources are left orphaned** (prosa can no longer read or destroy them): save it in a password manager before the first `apply`.
 

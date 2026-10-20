@@ -221,7 +221,7 @@ func TestApplyFailurePrintedOnce(t *testing.T) {
 	dir, fx := gatedProject(t, "---\nautonomy: auto\n---\none thing")
 	fake := &fakeProvider{failApply: errors.New("quota exceeded")}
 	var stdout, stderr bytes.Buffer
-	code := reconcile(context.Background(), "apply", []string{"--fixtures", fx, dir}, strings.NewReader(""), &stdout, &stderr, fake.source, noPlanner)
+	code := reconcile(context.Background(), "apply", []string{"--yes", "--fixtures", fx, dir}, strings.NewReader(""), &stdout, &stderr, fake.source, noPlanner)
 	if code != 1 {
 		t.Fatalf("exit %d, want 1", code)
 	}
