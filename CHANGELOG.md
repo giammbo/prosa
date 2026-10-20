@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-10-20
+
 ### Added
 - First run on real AWS (eu-west-1): create at the smallest sizes, resize, scale and destroy, with Claude as the planner.
 

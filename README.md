@@ -19,11 +19,11 @@ No need to clone the repo. On linux or macOS (amd64 or arm64), the install scrip
 curl -fsSL https://raw.githubusercontent.com/giammbo/prosa/main/install.sh | sh
 ```
 
-`PROSA_VERSION=v0.1.0` installs a specific release, `PROSA_INSTALL_DIR=~/bin` picks the folder. By hand: download `prosa_<version>_<os>_<arch>.tar.gz` and `checksums.txt` from the [Releases](https://github.com/giammbo/prosa/releases) page, check the archive, extract `prosa` and put it on your `PATH`:
+`PROSA_VERSION=v0.2.0` installs a specific release, `PROSA_INSTALL_DIR=~/bin` picks the folder. By hand: download `prosa_<version>_<os>_<arch>.tar.gz` and `checksums.txt` from the [Releases](https://github.com/giammbo/prosa/releases) page, check the archive, extract `prosa` and put it on your `PATH`:
 
 ```sh
-curl -fsSLO https://github.com/giammbo/prosa/releases/download/v0.1.0/prosa_0.1.0_darwin_arm64.tar.gz
-tar -xzf prosa_0.1.0_darwin_arm64.tar.gz prosa && sudo mv prosa /usr/local/bin/
+curl -fsSLO https://github.com/giammbo/prosa/releases/download/v0.2.0/prosa_0.2.0_darwin_arm64.tar.gz
+tar -xzf prosa_0.2.0_darwin_arm64.tar.gz prosa && sudo mv prosa /usr/local/bin/
 ```
 
 With Go:
