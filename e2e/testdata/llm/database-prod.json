@@ -1,0 +1,291 @@
+{
+  "prompt_version": "m7-2",
+  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "turns": [
+    {
+      "id": "msg_01DFwE2fPJR92Q977LTWrfqn",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EofSKfFU9Cv6wE8yN+azUhP7Aif+pMeVS+bchsIOHkH9/u//95GQIIr264qqiVp2ndxwMT6vB1mAtkUgXqaMyl06OZY94vwBWGItJIM0HsrDRex2gw8nYnE7LaIfo8phA722ExfSgvnlya+BdGLwNxRlUGyv06MBc3oHM4ahT9CHOMVwwEOx17H3Vds51Tcl+Q6GqJpZZH46CdLF0p9AFZnozKOpaw5OXF8QMhNx7ScnDMFKqR"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01zNuGh3CZdukW6TScmJVNmY",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_vpc"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SSLww55V7L5GtWoMw5P871",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_internet_gateway"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01uR2CMwe4nDjSSiQFA1xxCR",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_subnet"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01tdPLECwiD8RAN8pf41Jcm7",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_route_table"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 900,
+        "output_tokens": 437,
+        "cache_creation_input_tokens": 2360,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    },
+    {
+      "id": "msg_01nC1QUaoG5AJgBhQuJ6eecA",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EoLikhyGoFDwknpOlvTSO4HsaqBmRiCGS3szDyPZ9Oq6KDDNltAECWrm4OT2lqGXgAP8qWdntbuomEmmMjbcqeoCduel50d/VwwaYo1Db2nDKI8BWuSJpYm15p5lmRhbW8bQ5gKvVyB0dh642dThSxIGGEc2KhumVgF3e5nAtKvQMKp6b1REJjY6+oe5temEzcyvL7NMgwsDfRCqukSZJ7FveIWmav+REiZbEsSlLVHSO+IpNv"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01dPDqkJnn3KhXj2bwWbagQv",
+          "name": "submit_changes",
+          "input": {
+            "changes": [
+              {
+                "op": "set",
+                "key": "net.vpc",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "net.igw",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "net.subnet_public_a",
+                "path": "availability_zone",
+                "value": "eu-west-1a"
+              },
+              {
+                "op": "set",
+                "key": "net.subnet_public_a",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "net.subnet_public_b",
+                "path": "availability_zone",
+                "value": "eu-west-1b"
+              },
+              {
+                "op": "set",
+                "key": "net.subnet_public_b",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "net.subnet_private_a",
+                "path": "availability_zone",
+                "value": "eu-west-1a"
+              },
+              {
+                "op": "set",
+                "key": "net.subnet_private_a",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "net.subnet_private_b",
+                "path": "availability_zone",
+                "value": "eu-west-1b"
+              },
+              {
+                "op": "set",
+                "key": "net.subnet_private_b",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "net.rt_public",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "net.nat_eip",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "net.nat",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "net.rt_private",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "net.app_sg",
+                "path": "description",
+                "value": "Containers of the prod application"
+              },
+              {
+                "op": "set",
+                "key": "net.app_sg",
+                "path": "name",
+                "value": "prod-app"
+              },
+              {
+                "op": "set",
+                "key": "net.app_sg",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "net.app_sg_egress",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "db.sg",
+                "path": "description",
+                "value": "Postgres of prod, reachable only from the application"
+              },
+              {
+                "op": "set",
+                "key": "db.sg",
+                "path": "name",
+                "value": "prod-db"
+              },
+              {
+                "op": "set",
+                "key": "db.sg",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "db.sg_ingress_private_a",
+                "path": "description",
+                "value": "Postgres from the private subnet in eu-west-1a"
+              },
+              {
+                "op": "set",
+                "key": "db.sg_ingress_private_a",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "db.sg_ingress_private_b",
+                "path": "description",
+                "value": "Postgres from the private subnet in eu-west-1b"
+              },
+              {
+                "op": "set",
+                "key": "db.sg_ingress_private_b",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "db.subnet_group",
+                "path": "description",
+                "value": "Private subnets of prod"
+              },
+              {
+                "op": "set",
+                "key": "db.subnet_group",
+                "path": "name",
+                "value": "prod-db"
+              },
+              {
+                "op": "set",
+                "key": "db.subnet_group",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "db.instance",
+                "path": "allocated_storage",
+                "value": 100
+              },
+              {
+                "op": "set",
+                "key": "db.instance",
+                "path": "backup_retention_period",
+                "value": 30
+              },
+              {
+                "op": "set",
+                "key": "db.instance",
+                "path": "identifier",
+                "value": "prod-main-db"
+              },
+              {
+                "op": "set",
+                "key": "db.instance",
+                "path": "multi_az",
+                "value": true
+              },
+              {
+                "op": "set",
+                "key": "db.instance",
+                "path": "tags.env",
+                "value": "prod"
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 5600,
+        "output_tokens": 1166,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 3697,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

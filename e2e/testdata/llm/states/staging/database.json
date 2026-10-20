@@ -1,0 +1,124 @@
+{"resources": [
+  {"key": "net.vpc", "type": "aws_vpc", "config": {
+    "cidr_block": "10.20.0.0/16",
+    "enable_dns_support": true,
+    "enable_dns_hostnames": true,
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "net.igw", "type": "aws_internet_gateway", "config": {
+    "vpc_id": "${database/net.vpc.id}",
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "net.subnet_public_a", "type": "aws_subnet", "config": {
+    "vpc_id": "${database/net.vpc.id}",
+    "cidr_block": "10.20.0.0/24",
+    "availability_zone": "eu-south-1a",
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "net.subnet_public_b", "type": "aws_subnet", "config": {
+    "vpc_id": "${database/net.vpc.id}",
+    "cidr_block": "10.20.1.0/24",
+    "availability_zone": "eu-south-1b",
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "net.subnet_private_a", "type": "aws_subnet", "config": {
+    "vpc_id": "${database/net.vpc.id}",
+    "cidr_block": "10.20.10.0/24",
+    "availability_zone": "eu-south-1a",
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "net.subnet_private_b", "type": "aws_subnet", "config": {
+    "vpc_id": "${database/net.vpc.id}",
+    "cidr_block": "10.20.11.0/24",
+    "availability_zone": "eu-south-1b",
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "net.rt_public", "type": "aws_route_table", "config": {
+    "vpc_id": "${database/net.vpc.id}",
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "net.route_public_default", "type": "aws_route", "config": {
+    "route_table_id": "${database/net.rt_public.id}",
+    "destination_cidr_block": "0.0.0.0/0",
+    "gateway_id": "${database/net.igw.id}"}},
+  {"key": "net.rta_public_a", "type": "aws_route_table_association", "config": {
+    "subnet_id": "${database/net.subnet_public_a.id}",
+    "route_table_id": "${database/net.rt_public.id}"}},
+  {"key": "net.rta_public_b", "type": "aws_route_table_association", "config": {
+    "subnet_id": "${database/net.subnet_public_b.id}",
+    "route_table_id": "${database/net.rt_public.id}"}},
+  {"key": "net.nat_eip", "type": "aws_eip", "config": {
+    "domain": "vpc",
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "net.nat", "type": "aws_nat_gateway", "config": {
+    "allocation_id": "${database/net.nat_eip.id}",
+    "subnet_id": "${database/net.subnet_public_a.id}",
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "net.rt_private", "type": "aws_route_table", "config": {
+    "vpc_id": "${database/net.vpc.id}",
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "net.route_private_default", "type": "aws_route", "config": {
+    "route_table_id": "${database/net.rt_private.id}",
+    "destination_cidr_block": "0.0.0.0/0",
+    "nat_gateway_id": "${database/net.nat.id}"}},
+  {"key": "net.rta_private_a", "type": "aws_route_table_association", "config": {
+    "subnet_id": "${database/net.subnet_private_a.id}",
+    "route_table_id": "${database/net.rt_private.id}"}},
+  {"key": "net.rta_private_b", "type": "aws_route_table_association", "config": {
+    "subnet_id": "${database/net.subnet_private_b.id}",
+    "route_table_id": "${database/net.rt_private.id}"}},
+  {"key": "net.app_sg", "type": "aws_security_group", "config": {
+    "name": "staging-app",
+    "description": "Containers of the staging application",
+    "vpc_id": "${database/net.vpc.id}",
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "net.app_sg_egress", "type": "aws_vpc_security_group_egress_rule", "config": {
+    "security_group_id": "${database/net.app_sg.id}",
+    "description": "Outbound traffic of the application containers",
+    "ip_protocol": "-1",
+    "cidr_ipv4": "0.0.0.0/0",
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "db.sg", "type": "aws_security_group", "config": {
+    "name": "staging-db",
+    "description": "Postgres of staging, reachable only from the application",
+    "vpc_id": "${database/net.vpc.id}",
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "db.sg_ingress_private_a", "type": "aws_vpc_security_group_ingress_rule", "config": {
+    "security_group_id": "${database/db.sg.id}",
+    "description": "Postgres from the private subnet in eu-south-1a",
+    "cidr_ipv4": "${database/net.subnet_private_a.cidr_block}",
+    "ip_protocol": "tcp",
+    "from_port": 5432,
+    "to_port": 5432,
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "db.sg_ingress_private_b", "type": "aws_vpc_security_group_ingress_rule", "config": {
+    "security_group_id": "${database/db.sg.id}",
+    "description": "Postgres from the private subnet in eu-south-1b",
+    "cidr_ipv4": "${database/net.subnet_private_b.cidr_block}",
+    "ip_protocol": "tcp",
+    "from_port": 5432,
+    "to_port": 5432,
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "db.subnet_group", "type": "aws_db_subnet_group", "config": {
+    "name": "staging-db",
+    "description": "Private subnets of staging",
+    "subnet_ids": ["${database/net.subnet_private_a.id}", "${database/net.subnet_private_b.id}"],
+    "tags": {"team": "platform", "env": "staging"}}},
+  {"key": "db.instance", "type": "aws_db_instance", "config": {
+    "identifier": "staging-main-db",
+    "engine": "postgres",
+    "engine_version": "18",
+    "instance_class": "db.t4g.micro",
+    "allocated_storage": 40,
+    "storage_encrypted": true,
+    "username": "app_admin",
+    "manage_master_user_password": true,
+    "db_subnet_group_name": "${database/db.subnet_group.name}",
+    "vpc_security_group_ids": ["${database/db.sg.id}"],
+    "publicly_accessible": false,
+    "backup_retention_period": 7,
+    "backup_window": "01:00-01:30",
+    "skip_final_snapshot": true,
+    "tags": {"team": "platform", "env": "staging"}}}
+],
+"checks": [
+  {"name": "The database accepts connections from the private subnet and rejects them from the internet.", "type": "resource_attr",
+   "resource": "database/db.instance", "path": "publicly_accessible", "op": "eq", "value": false},
+  {"name": "There is at least one backup newer than 24 hours (after the first day).", "type": "resource_attr",
+   "resource": "database/db.instance", "path": "latest_restorable_time", "op": "within", "value": "24h"},
+  {"name": "Storage is encrypted.", "type": "resource_attr",
+   "resource": "database/db.instance", "path": "storage_encrypted", "op": "eq", "value": true}
+]}

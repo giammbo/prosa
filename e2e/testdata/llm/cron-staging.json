@@ -1,0 +1,147 @@
+{
+  "prompt_version": "m7-2",
+  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "turns": [
+    {
+      "id": "msg_01kryPnj8hH98oZYQ74dmXCG",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EoFErg4vsZfuFUT8vmEtPyAjCuXj3cds7e1n+K+X+HKMN/GUkD6VoQHuclURKGuXsz+ag+g8e05iflMiFko1DuFBuma/RA7bZDf2wF5m3dZZYUDkFJ95tvSXdRpatix2FY46P0KF0wrk/6beSeGOdboVsTDM5lOOv5fPY8ISB/RPekElre1Ch5TUqKkvjaET6WSax/WxJU1sbb+3YHX7R90968mL9poIC6S3ED+XW5qZpaSCxc"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01BhqwWp1o7XJLazfkPjwWMY",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_sns_topic"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Nh7NdQTw9pRk29aiTDUfKw",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_cloudwatch_event_rule"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01A73vPJnPgG95nLMBtUCgG6",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_sns_topic_policy"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01tg7QMQwCK3iwR3pefxwRzC",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_cloudwatch_event_target"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 900,
+        "output_tokens": 448,
+        "cache_creation_input_tokens": 2360,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    },
+    {
+      "id": "msg_01TpqXLYngEju5ycDiG5uTZb",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Eo8MeW4MOHL2xWBuxrQ10OosqXZP/opRdrJmgeIXS5HR86uhfUOTquePnO3Aqp2TPkvBfDdi1vmHetOz1xx+ZIrD/aeJNeelmyyF+IX8NnPIcgdZB6HvPwHluT51McHW2YzDby//giXMR1MIhEr5qtg7db5VDegrVQR9aS7fALx92FtMPMWFZs8iKBQgfg+d1izHzLESwXBqhsxiCnfTdtzxceJkOw66FSv/QyjnS32ZVDvSvR"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_017xgZjtCGzjQBMD8LExHTEF",
+          "name": "submit_changes",
+          "input": {
+            "changes": [
+              {
+                "op": "remove",
+                "key": "alerts.topic"
+              },
+              {
+                "op": "remove",
+                "key": "alerts.failed_runs"
+              },
+              {
+                "op": "remove",
+                "key": "alerts.topic_policy"
+              },
+              {
+                "op": "remove",
+                "key": "alerts.failed_runs_to_topic"
+              },
+              {
+                "op": "set",
+                "key": "job.cluster",
+                "path": "name",
+                "value": "staging-cron"
+              },
+              {
+                "op": "set",
+                "key": "job.cluster",
+                "path": "tags",
+                "value": {
+                  "note": "sentinel-7f3a"
+                }
+              },
+              {
+                "op": "set",
+                "key": "job.execution_role",
+                "path": "name",
+                "value": "staging-clearsessions-execution"
+              },
+              {
+                "op": "set",
+                "key": "job.task",
+                "path": "family",
+                "value": "staging-clearsessions"
+              },
+              {
+                "op": "set",
+                "key": "job.scheduler_role",
+                "path": "name",
+                "value": "staging-clearsessions-scheduler"
+              },
+              {
+                "op": "set",
+                "key": "job.schedule",
+                "path": "name",
+                "value": "staging-clearsessions"
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 5600,
+        "output_tokens": 537,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 3708,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

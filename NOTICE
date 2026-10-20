@@ -1,0 +1,17 @@
+Prosa
+Copyright 2026 Gianmarco Carrieri
+Licensed under the Apache License, Version 2.0.
+
+Third-party code
+----------------
+
+The directory internal/tfplugin5 is copied from
+github.com/hashicorp/terraform-plugin-go v0.31.0 (the Terraform plugin
+protocol version 5 definition and its generated gRPC stubs). It is licensed
+under the Mozilla Public License 2.0 (MPL-2.0). The original file headers
+("Copyright IBM Corp. 2020, 2026", "SPDX-License-Identifier: MPL-2.0") are
+kept unchanged. The MPL-2.0 applies to those files only; the rest of Prosa
+is under the Apache License 2.0.
+
+Source: https://github.com/hashicorp/terraform-plugin-go
+MPL-2.0: https://www.mozilla.org/MPL/2.0/

@@ -1,0 +1,251 @@
+{
+  "prompt_version": "m7-2",
+  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "turns": [
+    {
+      "id": "msg_01zvsQgpVZD1RUsSGbF9rRTu",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EogDkLxDbt8qpglkPbTL2DO1QNawSxmJ7t2C4mfRjombtmpUUCZ7T0CuTg67HhFtu7up6gQAi6mUwMWG5+or+rl1hQ5iIMWlvB+IWFscvv1Jpd+axO+h8+8BzFbusWgW7yEVrerYN9hrB01xV568NN8zOQIe4bBqOnTWMsVDK2goMMG8aZLuhqefium1fXqBJj2fwMALMtRkvJ5S3hFl8JdUtV+hcY2mHea/CwzbYKNJy85rVc"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_014MGCTXjra2wMtfh41vFiky",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_ecs_cluster"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01h6oXAAc4hxCHWBz8tS9Hbe",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_iam_role"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_016WpTR98pLy55Un4VMnSMo8",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_ecs_task_definition"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01mnfEjT3iwk8c2V7ZaaMPop",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_security_group"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 900,
+        "output_tokens": 442,
+        "cache_creation_input_tokens": 2360,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    },
+    {
+      "id": "msg_01jJdbcYtqSUKxiHAKMAMV9A",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EoVVsSQ48uPuh94ofuutrRhj2tucv0kj9zH6Bt3EJqUVEdvRTIsMYa3Df9u8Lk2jWwn63zShQxKa3ExGaD1QGKMokfMziJ0C0hctkiIWyLmEenSRtj3w/u9N7pnqMf/BhW54fgGOzUrqyp2SivWP5jp//d75Ma7TtU2KF7Ziv/P7rNkTQyjUsUHix02rALFLHceid400j7Dw2HAMG2Pmcx3rN8R5it95PRZL/mcKNl53T9nUYq"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Riixwc2vmR6NyK6MifpV8W",
+          "name": "submit_changes",
+          "input": {
+            "changes": [
+              {
+                "op": "set",
+                "key": "app.cluster",
+                "path": "name",
+                "value": "prod-web"
+              },
+              {
+                "op": "set",
+                "key": "app.cluster",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.execution_role",
+                "path": "name",
+                "value": "prod-web-execution"
+              },
+              {
+                "op": "set",
+                "key": "app.execution_role",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.task",
+                "path": "family",
+                "value": "prod-web"
+              },
+              {
+                "op": "set",
+                "key": "app.task",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg",
+                "path": "description",
+                "value": "Public load balancer of the prod web app"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg",
+                "path": "name",
+                "value": "prod-web-alb"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg_https",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg_to_app",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.app_sg_from_alb",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.alb",
+                "path": "name",
+                "value": "prod-web"
+              },
+              {
+                "op": "set",
+                "key": "app.alb",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.target_group",
+                "path": "name",
+                "value": "prod-web"
+              },
+              {
+                "op": "set",
+                "key": "app.target_group",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.certificate",
+                "path": "domain_name",
+                "value": "www.acme.example"
+              },
+              {
+                "op": "set",
+                "key": "app.certificate",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.listener_https",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.service",
+                "path": "desired_count",
+                "value": 2
+              },
+              {
+                "op": "set",
+                "key": "app.service",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.service",
+                "path": "name",
+                "value": "web"
+              },
+              {
+                "op": "checks",
+                "value": [
+                  {
+                    "name": "`/health` on the web app's domain answers 200 within 60 seconds of the end of the apply.",
+                    "status": 200,
+                    "type": "http_get",
+                    "url": "https://www.acme.example/health",
+                    "within": "60s"
+                  },
+                  {
+                    "host": "www.acme.example",
+                    "min_days": 20,
+                    "name": "The certificate is valid for more than 20 days.",
+                    "type": "tls_days"
+                  },
+                  {
+                    "name": "The number of healthy replicas at rest is the requested one.",
+                    "op": "eq",
+                    "path": "desired_count",
+                    "resource": "app/app.service",
+                    "type": "resource_attr",
+                    "value": 2
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 5600,
+        "output_tokens": 996,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 3702,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

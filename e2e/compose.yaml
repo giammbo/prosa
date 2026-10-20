@@ -1,0 +1,7 @@
+# Moto, the AWS API mock the end-to-end tests run against.
+# Start: docker compose -f e2e/compose.yaml up -d
+services:
+  moto:
+    image: motoserver/moto@sha256:120b1589c6df7e35d2092935f6ff724486bb2c4189d0e36ce795baba1400ffd2
+    ports:
+      - "5555:5000"

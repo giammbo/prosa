@@ -1,0 +1,114 @@
+[
+  {
+    "intent": "network",
+    "hash": "sha256:e53945c4d71fd5e2e0000b554b8db23fe35a5d4bb01d6b0f7fe38dfdec6b43ad",
+    "resources": [
+      {
+        "key": "vpc",
+        "type": "aws_vpc",
+        "config": {
+          "cidr_block": "10.42.0.0/16"
+        }
+      },
+      {
+        "key": "subnet.a",
+        "type": "aws_subnet",
+        "config": {
+          "vpc_id": "${network/vpc.id}",
+          "cidr_block": "10.42.1.0/24",
+          "availability_zone": "eu-south-1a"
+        }
+      },
+      {
+        "key": "subnet.b",
+        "type": "aws_subnet",
+        "config": {
+          "vpc_id": "${network/vpc.id}",
+          "cidr_block": "10.42.2.0/24",
+          "availability_zone": "eu-south-1b"
+        }
+      },
+      {
+        "key": "sg",
+        "type": "aws_security_group",
+        "config": {
+          "name": "prosa-e2e-db",
+          "description": "Postgres of the prosa e2e",
+          "vpc_id": "${network/vpc.id}"
+        }
+      }
+    ]
+  },
+  {
+    "intent": "postgres",
+    "hash": "sha256:7b6fee84b091bd7f6340aaa2579dc25ba185df5ee54b11d82fe94313842e132c",
+    "resources": [
+      {
+        "key": "db.subnet_group",
+        "type": "aws_db_subnet_group",
+        "config": {
+          "name": "prosa-e2e",
+          "subnet_ids": [
+            "${network/subnet.a.id}",
+            "${network/subnet.b.id}"
+          ]
+        }
+      },
+      {
+        "key": "db.instance",
+        "type": "aws_db_instance",
+        "config": {
+          "identifier": "prosa-e2e",
+          "engine": "postgres",
+          "instance_class": "db.t4g.small",
+          "allocated_storage": 10,
+          "username": "app_admin",
+          "manage_master_user_password": true,
+          "db_subnet_group_name": "${postgres/db.subnet_group.name}",
+          "vpc_security_group_ids": [
+            "${network/sg.id}"
+          ],
+          "skip_final_snapshot": true,
+          "storage_encrypted": true,
+          "backup_retention_period": 7
+        }
+      }
+    ]
+  },
+  {
+    "intent": "postgres",
+    "hash": "sha256:56ba54c9f19d5453495af73d7e3984e8f67838630ca6b591ea933dbf8bb39721",
+    "resources": [
+      {
+        "key": "db.subnet_group",
+        "type": "aws_db_subnet_group",
+        "config": {
+          "name": "prosa-e2e",
+          "subnet_ids": [
+            "${network/subnet.a.id}",
+            "${network/subnet.b.id}"
+          ]
+        }
+      },
+      {
+        "key": "db.instance",
+        "type": "aws_db_instance",
+        "config": {
+          "identifier": "prosa-e2e",
+          "engine": "postgres",
+          "instance_class": "db.t4g.small",
+          "allocated_storage": 10,
+          "username": "app_admin",
+          "manage_master_user_password": true,
+          "db_subnet_group_name": "${postgres/db.subnet_group.name}",
+          "vpc_security_group_ids": [
+            "${network/sg.id}"
+          ],
+          "skip_final_snapshot": true,
+          "storage_encrypted": true,
+          "backup_retention_period": 3
+        }
+      }
+    ]
+  }
+]

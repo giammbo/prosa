@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="676" viewBox="0 0 860 676" role="img" aria-label="Output of prosa plan --env envs/staging.md">
+<rect width="100%" height="100%" rx="10" fill="#0d1117"/>
+<rect width="100%" height="36" rx="10" fill="#161b22"/><rect y="26" width="100%" height="10" fill="#161b22"/>
+<circle cx="20" cy="18" r="6" fill="#ff5f56"/><circle cx="40" cy="18" r="6" fill="#ffbd2e"/><circle cx="60" cy="18" r="6" fill="#27c93f"/>
+<text x="430" y="22" fill="#8b949e" font-family="Menlo,Consolas,monospace" font-size="12" text-anchor="middle">prosa plan --env envs/staging.md</text>
+<g font-family="Menlo,Consolas,'DejaVu Sans Mono',monospace" font-size="13" xml:space="preserve">
+<text x="20" y="62" fill="#e6edf3"><tspan fill="#7ee787">$</tspan> prosa plan --env envs/staging.md</text>
+<text x="20" y="82" fill="#8b949e" xml:space="preserve">target: emulated endpoint http://localhost:5555 (region eu-south-1)</text>
+<text x="20" y="102" fill="#e6edf3" xml:space="preserve">Prosa will perform the following actions:</text>
+<text x="20" y="122" fill="#e6edf3" xml:space="preserve"></text>
+<text x="20" y="142" fill="#8b949e" xml:space="preserve">  # app/app.certificate_validation will be created</text>
+<text x="20" y="162" fill="#d29922" xml:space="preserve">  # (needs approval)</text>
+<text x="20" y="182" fill="#7ee787" xml:space="preserve">  + resource &quot;aws_acm_certificate_validation&quot; &quot;app.certificate_validation&quot; {</text>
+<text x="20" y="202" fill="#7ee787" xml:space="preserve">      + certificate_arn = (known after apply)</text>
+<text x="20" y="222" fill="#7ee787" xml:space="preserve">      + id              = (known after apply)</text>
+<text x="20" y="242" fill="#7ee787" xml:space="preserve">      + region          = &quot;eu-south-1&quot;</text>
+<text x="20" y="262" fill="#e6edf3" xml:space="preserve">    }</text>
+<text x="20" y="282" fill="#e6edf3" xml:space="preserve"></text>
+<text x="20" y="302" fill="#8b949e" xml:space="preserve">  # app/app.cluster will be created</text>
+<text x="20" y="322" fill="#d29922" xml:space="preserve">  # (needs approval)</text>
+<text x="20" y="342" fill="#7ee787" xml:space="preserve">  + resource &quot;aws_ecs_cluster&quot; &quot;app.cluster&quot; {</text>
+<text x="20" y="362" fill="#7ee787" xml:space="preserve">      + arn      = (known after apply)</text>
+<text x="20" y="382" fill="#7ee787" xml:space="preserve">      + id       = (known after apply)</text>
+<text x="20" y="402" fill="#7ee787" xml:space="preserve">      + name     = &quot;staging-web&quot;</text>
+<text x="20" y="422" fill="#7ee787" xml:space="preserve">      + region   = &quot;eu-south-1&quot;</text>
+<text x="20" y="442" fill="#7ee787" xml:space="preserve">      + tags     = {</text>
+<text x="20" y="462" fill="#7ee787" xml:space="preserve">          + &quot;env&quot;          = &quot;staging&quot;</text>
+<text x="20" y="482" fill="#7ee787" xml:space="preserve">          + &quot;prosa/env&quot;    = &quot;staging&quot;</text>
+<text x="20" y="502" fill="#7ee787" xml:space="preserve">          + &quot;prosa/intent&quot; = &quot;app&quot;</text>
+<text x="20" y="522" fill="#7ee787" xml:space="preserve">          + &quot;team&quot;         = &quot;platform&quot;</text>
+<text x="20" y="542" fill="#e6edf3" xml:space="preserve">        }</text>
+<text x="20" y="562" fill="#8b949e" xml:space="preserve">      ...</text>
+<text x="20" y="582" fill="#e6edf3" xml:space="preserve">    }</text>
+<text x="20" y="602" fill="#e6edf3" xml:space="preserve"></text>
+<text x="20" y="622" fill="#8b949e" xml:space="preserve">  ... 42 more resources</text>
+<text x="20" y="642" fill="#e6edf3" xml:space="preserve"></text>
+<text x="20" y="662" fill="#ffffff" font-weight="bold" xml:space="preserve">Plan: 44 to add, 0 to change, 0 to destroy.</text>
+</g></svg>

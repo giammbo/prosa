@@ -1,0 +1,1980 @@
+[
+  {
+    "intent": "database",
+    "hash": "sha256:071a88a3be09d2ab76c364e6d97439f348c2cf2932dd28634c53e51210819fcd",
+    "resources": [
+      {
+        "key": "net.vpc",
+        "type": "aws_vpc",
+        "config": {
+          "cidr_block": "10.20.0.0/16",
+          "enable_dns_hostnames": true,
+          "enable_dns_support": true,
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "net.igw",
+        "type": "aws_internet_gateway",
+        "config": {
+          "tags": {
+            "team": "platform"
+          },
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "net.subnet_public_a",
+        "type": "aws_subnet",
+        "config": {
+          "availability_zone": "eu-south-1a",
+          "cidr_block": "10.20.0.0/24",
+          "tags": {
+            "team": "platform"
+          },
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "net.subnet_public_b",
+        "type": "aws_subnet",
+        "config": {
+          "availability_zone": "eu-south-1b",
+          "cidr_block": "10.20.1.0/24",
+          "tags": {
+            "team": "platform"
+          },
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "net.subnet_private_a",
+        "type": "aws_subnet",
+        "config": {
+          "availability_zone": "eu-south-1a",
+          "cidr_block": "10.20.10.0/24",
+          "tags": {
+            "team": "platform"
+          },
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "net.subnet_private_b",
+        "type": "aws_subnet",
+        "config": {
+          "availability_zone": "eu-south-1b",
+          "cidr_block": "10.20.11.0/24",
+          "tags": {
+            "team": "platform"
+          },
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "net.rt_public",
+        "type": "aws_route_table",
+        "config": {
+          "tags": {
+            "team": "platform"
+          },
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "net.route_public_default",
+        "type": "aws_route",
+        "config": {
+          "destination_cidr_block": "0.0.0.0/0",
+          "gateway_id": "${database/net.igw.id}",
+          "route_table_id": "${database/net.rt_public.id}"
+        }
+      },
+      {
+        "key": "net.rta_public_a",
+        "type": "aws_route_table_association",
+        "config": {
+          "route_table_id": "${database/net.rt_public.id}",
+          "subnet_id": "${database/net.subnet_public_a.id}"
+        }
+      },
+      {
+        "key": "net.rta_public_b",
+        "type": "aws_route_table_association",
+        "config": {
+          "route_table_id": "${database/net.rt_public.id}",
+          "subnet_id": "${database/net.subnet_public_b.id}"
+        }
+      },
+      {
+        "key": "net.nat_eip",
+        "type": "aws_eip",
+        "config": {
+          "domain": "vpc",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "net.nat",
+        "type": "aws_nat_gateway",
+        "config": {
+          "allocation_id": "${database/net.nat_eip.id}",
+          "subnet_id": "${database/net.subnet_public_a.id}",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "net.rt_private",
+        "type": "aws_route_table",
+        "config": {
+          "tags": {
+            "team": "platform"
+          },
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "net.route_private_default",
+        "type": "aws_route",
+        "config": {
+          "destination_cidr_block": "0.0.0.0/0",
+          "nat_gateway_id": "${database/net.nat.id}",
+          "route_table_id": "${database/net.rt_private.id}"
+        }
+      },
+      {
+        "key": "net.rta_private_a",
+        "type": "aws_route_table_association",
+        "config": {
+          "route_table_id": "${database/net.rt_private.id}",
+          "subnet_id": "${database/net.subnet_private_a.id}"
+        }
+      },
+      {
+        "key": "net.rta_private_b",
+        "type": "aws_route_table_association",
+        "config": {
+          "route_table_id": "${database/net.rt_private.id}",
+          "subnet_id": "${database/net.subnet_private_b.id}"
+        }
+      },
+      {
+        "key": "net.app_sg",
+        "type": "aws_security_group",
+        "config": {
+          "description": "Containers of the application",
+          "name": "app",
+          "tags": {
+            "team": "platform"
+          },
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "net.app_sg_egress",
+        "type": "aws_vpc_security_group_egress_rule",
+        "config": {
+          "cidr_ipv4": "0.0.0.0/0",
+          "description": "Outbound traffic of the application containers",
+          "ip_protocol": "-1",
+          "security_group_id": "${database/net.app_sg.id}",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "db.sg",
+        "type": "aws_security_group",
+        "config": {
+          "description": "Postgres, reachable only from the application",
+          "name": "db",
+          "tags": {
+            "team": "platform"
+          },
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "db.sg_ingress_private_a",
+        "type": "aws_vpc_security_group_ingress_rule",
+        "config": {
+          "cidr_ipv4": "${database/net.subnet_private_a.cidr_block}",
+          "description": "Postgres from the private subnet in eu-south-1a",
+          "from_port": 5432,
+          "ip_protocol": "tcp",
+          "security_group_id": "${database/db.sg.id}",
+          "tags": {
+            "team": "platform"
+          },
+          "to_port": 5432
+        }
+      },
+      {
+        "key": "db.sg_ingress_private_b",
+        "type": "aws_vpc_security_group_ingress_rule",
+        "config": {
+          "cidr_ipv4": "${database/net.subnet_private_b.cidr_block}",
+          "description": "Postgres from the private subnet in eu-south-1b",
+          "from_port": 5432,
+          "ip_protocol": "tcp",
+          "security_group_id": "${database/db.sg.id}",
+          "tags": {
+            "team": "platform"
+          },
+          "to_port": 5432
+        }
+      },
+      {
+        "key": "db.subnet_group",
+        "type": "aws_db_subnet_group",
+        "config": {
+          "description": "Private subnets",
+          "name": "db",
+          "subnet_ids": [
+            "${database/net.subnet_private_a.id}",
+            "${database/net.subnet_private_b.id}"
+          ],
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "db.instance",
+        "type": "aws_db_instance",
+        "config": {
+          "allocated_storage": 20,
+          "backup_retention_period": 7,
+          "backup_window": "01:00-01:30",
+          "db_subnet_group_name": "${database/db.subnet_group.name}",
+          "engine": "postgres",
+          "engine_version": "17",
+          "identifier": "main-db",
+          "instance_class": "db.t4g.micro",
+          "manage_master_user_password": true,
+          "publicly_accessible": false,
+          "skip_final_snapshot": true,
+          "storage_encrypted": true,
+          "tags": {
+            "team": "platform"
+          },
+          "username": "app_admin",
+          "vpc_security_group_ids": [
+            "${database/db.sg.id}"
+          ]
+        }
+      }
+    ],
+    "blockers": null,
+    "checks": [
+      {
+        "name": "The database accepts connections from the private subnet and rejects them from the internet.",
+        "type": "resource_attr",
+        "resource": "database/db.instance",
+        "path": "publicly_accessible",
+        "op": "eq",
+        "value": false
+      },
+      {
+        "name": "There is at least one backup newer than 24 hours (after the first day).",
+        "type": "resource_attr",
+        "resource": "database/db.instance",
+        "path": "latest_restorable_time",
+        "op": "within",
+        "value": "24h"
+      },
+      {
+        "name": "Storage is encrypted.",
+        "type": "resource_attr",
+        "resource": "database/db.instance",
+        "path": "storage_encrypted",
+        "op": "eq",
+        "value": true
+      }
+    ],
+    "patch": null
+  },
+  {
+    "intent": "app",
+    "hash": "sha256:af9e5efb05facdd2e919f546f8ba2bce9dcefbc71a323fa5df795caa87acd29b",
+    "resources": [
+      {
+        "key": "app.cluster",
+        "type": "aws_ecs_cluster",
+        "config": {
+          "name": "web",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.execution_role",
+        "type": "aws_iam_role",
+        "config": {
+          "assume_role_policy": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ecs-tasks.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "description": "Lets ECS start the web app tasks and read the database secret",
+          "name": "web-execution",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.execution_role_policy",
+        "type": "aws_iam_role_policy",
+        "config": {
+          "name": "read-database-secret",
+          "policy": {
+            "Statement": [
+              {
+                "Action": "secretsmanager:GetSecretValue",
+                "Effect": "Allow",
+                "Resource": "${database/db.instance.master_user_secret.0.secret_arn}"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "role": "${app/app.execution_role.name}"
+        }
+      },
+      {
+        "key": "app.task",
+        "type": "aws_ecs_task_definition",
+        "config": {
+          "container_definitions": [
+            {
+              "essential": true,
+              "image": "ghcr.io/acme/web:1.4.2",
+              "name": "web",
+              "portMappings": [
+                {
+                  "containerPort": 8000,
+                  "protocol": "tcp"
+                }
+              ],
+              "secrets": [
+                {
+                  "name": "DATABASE_URL",
+                  "valueFrom": "${database/db.instance.master_user_secret.0.secret_arn}"
+                }
+              ]
+            }
+          ],
+          "cpu": "256",
+          "execution_role_arn": "${app/app.execution_role.arn}",
+          "family": "web",
+          "memory": "512",
+          "network_mode": "awsvpc",
+          "requires_compatibilities": [
+            "FARGATE"
+          ],
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.alb_sg",
+        "type": "aws_security_group",
+        "config": {
+          "description": "Public load balancer of the web app",
+          "name": "web-alb",
+          "tags": {
+            "team": "platform"
+          },
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "app.alb_sg_https",
+        "type": "aws_vpc_security_group_ingress_rule",
+        "config": {
+          "cidr_ipv4": "0.0.0.0/0",
+          "description": "HTTPS from the internet",
+          "from_port": 443,
+          "ip_protocol": "tcp",
+          "security_group_id": "${app/app.alb_sg.id}",
+          "tags": {
+            "team": "platform"
+          },
+          "to_port": 443
+        }
+      },
+      {
+        "key": "app.alb_sg_to_app",
+        "type": "aws_vpc_security_group_egress_rule",
+        "config": {
+          "cidr_ipv4": "${database/net.vpc.cidr_block}",
+          "description": "To the web app containers, in the VPC",
+          "from_port": 8000,
+          "ip_protocol": "tcp",
+          "security_group_id": "${app/app.alb_sg.id}",
+          "tags": {
+            "team": "platform"
+          },
+          "to_port": 8000
+        }
+      },
+      {
+        "key": "app.app_sg_from_alb",
+        "type": "aws_vpc_security_group_ingress_rule",
+        "config": {
+          "cidr_ipv4": "${database/net.vpc.cidr_block}",
+          "description": "Web app traffic from the load balancer, in the VPC",
+          "from_port": 8000,
+          "ip_protocol": "tcp",
+          "security_group_id": "${database/net.app_sg.id}",
+          "tags": {
+            "team": "platform"
+          },
+          "to_port": 8000
+        }
+      },
+      {
+        "key": "app.alb",
+        "type": "aws_lb",
+        "config": {
+          "internal": false,
+          "load_balancer_type": "application",
+          "name": "web",
+          "security_groups": [
+            "${app/app.alb_sg.id}"
+          ],
+          "subnets": [
+            "${database/net.subnet_public_a.id}",
+            "${database/net.subnet_public_b.id}"
+          ],
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.target_group",
+        "type": "aws_lb_target_group",
+        "config": {
+          "health_check": [
+            {
+              "matcher": "200",
+              "path": "/health"
+            }
+          ],
+          "name": "web",
+          "port": 8000,
+          "protocol": "HTTP",
+          "tags": {
+            "team": "platform"
+          },
+          "target_type": "ip",
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "app.certificate",
+        "type": "aws_acm_certificate",
+        "config": {
+          "domain_name": "app.acme.example",
+          "tags": {
+            "team": "platform"
+          },
+          "validation_method": "DNS"
+        }
+      },
+      {
+        "key": "app.certificate_validation",
+        "type": "aws_acm_certificate_validation",
+        "config": {
+          "certificate_arn": "${app/app.certificate.arn}"
+        }
+      },
+      {
+        "key": "app.listener_https",
+        "type": "aws_lb_listener",
+        "config": {
+          "certificate_arn": "${app/app.certificate_validation.certificate_arn}",
+          "default_action": [
+            {
+              "target_group_arn": "${app/app.target_group.arn}",
+              "type": "forward"
+            }
+          ],
+          "load_balancer_arn": "${app/app.alb.arn}",
+          "port": 443,
+          "protocol": "HTTPS",
+          "ssl_policy": "ELBSecurityPolicy-TLS13-1-2-2021-06",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.service",
+        "type": "aws_ecs_service",
+        "config": {
+          "cluster": "${app/app.cluster.arn}",
+          "desired_count": 1,
+          "launch_type": "FARGATE",
+          "load_balancer": [
+            {
+              "container_name": "web",
+              "container_port": 8000,
+              "target_group_arn": "${app/app.target_group.arn}"
+            }
+          ],
+          "name": "web",
+          "network_configuration": [
+            {
+              "assign_public_ip": false,
+              "security_groups": [
+                "${database/net.app_sg.id}"
+              ],
+              "subnets": [
+                "${database/net.subnet_private_a.id}",
+                "${database/net.subnet_private_b.id}"
+              ]
+            }
+          ],
+          "tags": {
+            "Name": "${app/app.cluster.name}-svc",
+            "team": "platform"
+          },
+          "task_definition": "${app/app.task.arn}"
+        },
+        "depends_on": [
+          "app/app.listener_https"
+        ]
+      }
+    ],
+    "blockers": null,
+    "checks": [
+      {
+        "name": "`/health` on the web app's domain answers 200 within 60 seconds of the end of the apply.",
+        "type": "http_get",
+        "url": "https://app.acme.example/health",
+        "status": 200,
+        "within": "60s"
+      },
+      {
+        "name": "The certificate is valid for more than 20 days.",
+        "type": "tls_days",
+        "host": "app.acme.example",
+        "min_days": 20
+      },
+      {
+        "name": "The number of healthy replicas at rest is the requested one.",
+        "type": "resource_attr",
+        "resource": "app/app.service",
+        "path": "desired_count",
+        "op": "eq",
+        "value": 1
+      }
+    ],
+    "patch": null
+  },
+  {
+    "intent": "cron",
+    "hash": "sha256:800ff8204a8a37c4ece80fc788e7b1662a8078972118fa500e6ed8afb661486d",
+    "resources": [
+      {
+        "key": "job.cluster",
+        "type": "aws_ecs_cluster",
+        "config": {
+          "name": "cron"
+        }
+      },
+      {
+        "key": "job.execution_role",
+        "type": "aws_iam_role",
+        "config": {
+          "assume_role_policy": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ecs-tasks.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "description": "Lets ECS start the clearsessions task and read the database secret",
+          "name": "clearsessions-execution"
+        }
+      },
+      {
+        "key": "job.execution_role_policy",
+        "type": "aws_iam_role_policy",
+        "config": {
+          "name": "read-database-secret",
+          "policy": {
+            "Statement": [
+              {
+                "Action": "secretsmanager:GetSecretValue",
+                "Effect": "Allow",
+                "Resource": "${database/db.instance.master_user_secret.0.secret_arn}"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "role": "${cron/job.execution_role.name}"
+        }
+      },
+      {
+        "key": "job.task",
+        "type": "aws_ecs_task_definition",
+        "config": {
+          "container_definitions": [
+            {
+              "command": [
+                "python",
+                "manage.py",
+                "clearsessions"
+              ],
+              "essential": true,
+              "image": "ghcr.io/acme/web:1.4.2",
+              "name": "clearsessions",
+              "secrets": [
+                {
+                  "name": "DATABASE_URL",
+                  "valueFrom": "${database/db.instance.master_user_secret.0.secret_arn}"
+                }
+              ]
+            }
+          ],
+          "cpu": "256",
+          "execution_role_arn": "${cron/job.execution_role.arn}",
+          "family": "clearsessions",
+          "memory": "512",
+          "network_mode": "awsvpc",
+          "requires_compatibilities": [
+            "FARGATE"
+          ]
+        }
+      },
+      {
+        "key": "job.scheduler_role",
+        "type": "aws_iam_role",
+        "config": {
+          "assume_role_policy": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "scheduler.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "description": "Lets EventBridge Scheduler run the clearsessions task",
+          "name": "clearsessions-scheduler"
+        }
+      },
+      {
+        "key": "job.scheduler_role_policy",
+        "type": "aws_iam_role_policy",
+        "config": {
+          "name": "run-clearsessions",
+          "policy": {
+            "Statement": [
+              {
+                "Action": "ecs:RunTask",
+                "Condition": {
+                  "ArnEquals": {
+                    "ecs:cluster": "${cron/job.cluster.arn}"
+                  }
+                },
+                "Effect": "Allow",
+                "Resource": "${cron/job.task.arn}"
+              },
+              {
+                "Action": "iam:PassRole",
+                "Effect": "Allow",
+                "Resource": "${cron/job.execution_role.arn}"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "role": "${cron/job.scheduler_role.name}"
+        }
+      },
+      {
+        "key": "job.schedule",
+        "type": "aws_scheduler_schedule",
+        "config": {
+          "description": "python manage.py clearsessions every night at 03:00, Rome time",
+          "flexible_time_window": [
+            {
+              "mode": "OFF"
+            }
+          ],
+          "name": "clearsessions",
+          "schedule_expression": "cron(0 3 * * ? *)",
+          "schedule_expression_timezone": "Europe/Rome",
+          "state": "ENABLED",
+          "target": [
+            {
+              "arn": "${cron/job.cluster.arn}",
+              "ecs_parameters": [
+                {
+                  "launch_type": "FARGATE",
+                  "network_configuration": [
+                    {
+                      "assign_public_ip": false,
+                      "security_groups": [
+                        "${database/net.app_sg.id}"
+                      ],
+                      "subnets": [
+                        "${database/net.subnet_private_a.id}",
+                        "${database/net.subnet_private_b.id}"
+                      ]
+                    }
+                  ],
+                  "task_count": 1,
+                  "task_definition_arn": "${cron/job.task.arn}"
+                }
+              ],
+              "role_arn": "${cron/job.scheduler_role.arn}"
+            }
+          ]
+        }
+      },
+      {
+        "key": "alerts.topic",
+        "type": "aws_sns_topic",
+        "config": {
+          "name": "platform-alerts"
+        }
+      },
+      {
+        "key": "alerts.failed_runs",
+        "type": "aws_cloudwatch_event_rule",
+        "config": {
+          "description": "A clearsessions task stopped with a non-zero exit code",
+          "event_pattern": {
+            "detail": {
+              "clusterArn": [
+                "${cron/job.cluster.arn}"
+              ],
+              "containers": {
+                "exitCode": [
+                  {
+                    "anything-but": 0
+                  }
+                ]
+              },
+              "lastStatus": [
+                "STOPPED"
+              ]
+            },
+            "detail-type": [
+              "ECS Task State Change"
+            ],
+            "source": [
+              "aws.ecs"
+            ]
+          },
+          "name": "clearsessions-failed"
+        }
+      },
+      {
+        "key": "alerts.topic_policy",
+        "type": "aws_sns_topic_policy",
+        "config": {
+          "arn": "${cron/alerts.topic.arn}",
+          "policy": {
+            "Statement": [
+              {
+                "Action": "sns:Publish",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "events.amazonaws.com"
+                },
+                "Resource": "${cron/alerts.topic.arn}",
+                "Sid": "EventBridgePublishes"
+              }
+            ],
+            "Version": "2012-10-17"
+          }
+        }
+      },
+      {
+        "key": "alerts.failed_runs_to_topic",
+        "type": "aws_cloudwatch_event_target",
+        "config": {
+          "arn": "${cron/alerts.topic.arn}",
+          "rule": "${cron/alerts.failed_runs.name}",
+          "target_id": "platform-alerts"
+        }
+      }
+    ],
+    "blockers": null,
+    "checks": [
+      {
+        "name": "There is an active schedule with the stated time.",
+        "type": "resource_attr",
+        "resource": "cron/job.schedule",
+        "path": "schedule_expression",
+        "op": "eq",
+        "value": "cron(0 3 * * ? *)"
+      },
+      {
+        "name": "The last run (after the first night) finished successfully.",
+        "type": "unverifiable",
+        "reason": "The outcome of the scheduled task's runs is not an attribute of any resource of the provider: no check type can read it."
+      }
+    ],
+    "patch": null
+  },
+  {
+    "intent": "database",
+    "hash": "sha256:599c80c39c190a5e69e37aa8239f85bc7fa73287f72ef976ee2b0bfb2e5f1b88",
+    "resources": null,
+    "blockers": null,
+    "checks": null,
+    "patch": [
+      {
+        "op": "set",
+        "key": "net.vpc",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "net.igw",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "net.subnet_public_a",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "net.subnet_public_b",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "net.subnet_private_a",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "net.subnet_private_b",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "net.rt_public",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "net.nat_eip",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "net.nat",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "net.rt_private",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "net.app_sg",
+        "path": "description",
+        "value": "Containers of the staging application"
+      },
+      {
+        "op": "set",
+        "key": "net.app_sg",
+        "path": "name",
+        "value": "staging-app"
+      },
+      {
+        "op": "set",
+        "key": "net.app_sg",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "net.app_sg_egress",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "db.sg",
+        "path": "description",
+        "value": "Postgres of staging, reachable only from the application"
+      },
+      {
+        "op": "set",
+        "key": "db.sg",
+        "path": "name",
+        "value": "staging-db"
+      },
+      {
+        "op": "set",
+        "key": "db.sg",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "db.sg_ingress_private_a",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "db.sg_ingress_private_b",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "db.subnet_group",
+        "path": "description",
+        "value": "Private subnets of staging"
+      },
+      {
+        "op": "set",
+        "key": "db.subnet_group",
+        "path": "name",
+        "value": "staging-db"
+      },
+      {
+        "op": "set",
+        "key": "db.subnet_group",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "db.instance",
+        "path": "allocated_storage",
+        "value": 40
+      },
+      {
+        "op": "set",
+        "key": "db.instance",
+        "path": "engine_version",
+        "value": "18"
+      },
+      {
+        "op": "set",
+        "key": "db.instance",
+        "path": "identifier",
+        "value": "staging-main-db"
+      },
+      {
+        "op": "set",
+        "key": "db.instance",
+        "path": "tags.env",
+        "value": "staging"
+      }
+    ]
+  },
+  {
+    "intent": "app",
+    "hash": "sha256:3e57d500c091154b80dde63fbf049886b0df9505e9f4ae84732518bb566cbead",
+    "resources": null,
+    "blockers": null,
+    "checks": null,
+    "patch": [
+      {
+        "op": "set",
+        "key": "app.cluster",
+        "path": "name",
+        "value": "staging-web"
+      },
+      {
+        "op": "set",
+        "key": "app.cluster",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.execution_role",
+        "path": "name",
+        "value": "staging-web-execution"
+      },
+      {
+        "op": "set",
+        "key": "app.execution_role",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.task",
+        "path": "family",
+        "value": "staging-web"
+      },
+      {
+        "op": "set",
+        "key": "app.task",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.alb_sg",
+        "path": "description",
+        "value": "Public load balancer of the staging web app"
+      },
+      {
+        "op": "set",
+        "key": "app.alb_sg",
+        "path": "name",
+        "value": "staging-web-alb"
+      },
+      {
+        "op": "set",
+        "key": "app.alb_sg",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.alb_sg_https",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.alb_sg_to_app",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.app_sg_from_alb",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.alb",
+        "path": "name",
+        "value": "staging-web"
+      },
+      {
+        "op": "set",
+        "key": "app.alb",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.target_group",
+        "path": "name",
+        "value": "staging-web"
+      },
+      {
+        "op": "set",
+        "key": "app.target_group",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.certificate",
+        "path": "domain_name",
+        "value": "staging.acme.example"
+      },
+      {
+        "op": "set",
+        "key": "app.certificate",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.listener_https",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.service",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.service",
+        "path": "name",
+        "value": "web"
+      },
+      {
+        "op": "checks",
+        "value": [
+          {
+            "name": "`/health` on the web app's domain answers 200 within 60 seconds of the end of the apply.",
+            "status": 200,
+            "type": "http_get",
+            "url": "https://staging.acme.example/health",
+            "within": "60s"
+          },
+          {
+            "host": "staging.acme.example",
+            "min_days": 20,
+            "name": "The certificate is valid for more than 20 days.",
+            "type": "tls_days"
+          },
+          {
+            "name": "The number of healthy replicas at rest is the requested one.",
+            "op": "eq",
+            "path": "desired_count",
+            "resource": "app/app.service",
+            "type": "resource_attr",
+            "value": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "intent": "cron",
+    "hash": "sha256:3dbada4164c3b193e89bf5f9e947dc4409a77fc2df0562daf6bba4536b2ded2c",
+    "resources": null,
+    "blockers": null,
+    "checks": null,
+    "patch": [
+      {
+        "op": "remove",
+        "key": "alerts.topic"
+      },
+      {
+        "op": "remove",
+        "key": "alerts.failed_runs"
+      },
+      {
+        "op": "remove",
+        "key": "alerts.topic_policy"
+      },
+      {
+        "op": "remove",
+        "key": "alerts.failed_runs_to_topic"
+      },
+      {
+        "op": "set",
+        "key": "job.cluster",
+        "path": "name",
+        "value": "staging-cron"
+      },
+      {
+        "op": "set",
+        "key": "job.cluster",
+        "path": "tags",
+        "value": {
+          "note": "sentinel-7f3a"
+        }
+      },
+      {
+        "op": "set",
+        "key": "job.execution_role",
+        "path": "name",
+        "value": "staging-clearsessions-execution"
+      },
+      {
+        "op": "set",
+        "key": "job.task",
+        "path": "family",
+        "value": "staging-clearsessions"
+      },
+      {
+        "op": "set",
+        "key": "job.scheduler_role",
+        "path": "name",
+        "value": "staging-clearsessions-scheduler"
+      },
+      {
+        "op": "set",
+        "key": "job.schedule",
+        "path": "name",
+        "value": "staging-clearsessions"
+      }
+    ]
+  },
+  {
+    "intent": "app",
+    "hash": "sha256:c37ae5ca74e1a83f50c4ea732adaec9e3e63be0871adbcc55e5afc38e7efd3fa",
+    "resources": [
+      {
+        "key": "app.cluster",
+        "type": "aws_ecs_cluster",
+        "config": {
+          "name": "web",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.execution_role",
+        "type": "aws_iam_role",
+        "config": {
+          "assume_role_policy": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ecs-tasks.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "description": "Lets ECS start the web app tasks and read the database secret",
+          "name": "web-execution",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.execution_role_policy",
+        "type": "aws_iam_role_policy",
+        "config": {
+          "name": "read-database-secret",
+          "policy": {
+            "Statement": [
+              {
+                "Action": "secretsmanager:GetSecretValue",
+                "Effect": "Allow",
+                "Resource": "${database/db.instance.master_user_secret.0.secret_arn}"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "role": "${app/app.execution_role.name}"
+        }
+      },
+      {
+        "key": "app.task",
+        "type": "aws_ecs_task_definition",
+        "config": {
+          "container_definitions": [
+            {
+              "essential": true,
+              "image": "ghcr.io/acme/web:1.4.2",
+              "name": "web",
+              "portMappings": [
+                {
+                  "containerPort": 8000,
+                  "protocol": "tcp"
+                }
+              ],
+              "secrets": [
+                {
+                  "name": "DATABASE_URL",
+                  "valueFrom": "${database/db.instance.master_user_secret.0.secret_arn}"
+                }
+              ]
+            }
+          ],
+          "cpu": "256",
+          "execution_role_arn": "${app/app.execution_role.arn}",
+          "family": "web",
+          "memory": "512",
+          "network_mode": "awsvpc",
+          "requires_compatibilities": [
+            "FARGATE"
+          ],
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.alb_sg",
+        "type": "aws_security_group",
+        "config": {
+          "description": "Public load balancer of the web app",
+          "name": "web-alb",
+          "tags": {
+            "team": "platform"
+          },
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "app.alb_sg_https",
+        "type": "aws_vpc_security_group_ingress_rule",
+        "config": {
+          "cidr_ipv4": "0.0.0.0/0",
+          "description": "HTTPS from the internet",
+          "from_port": 443,
+          "ip_protocol": "tcp",
+          "security_group_id": "${app/app.alb_sg.id}",
+          "tags": {
+            "team": "platform"
+          },
+          "to_port": 443
+        }
+      },
+      {
+        "key": "app.alb_sg_to_app",
+        "type": "aws_vpc_security_group_egress_rule",
+        "config": {
+          "cidr_ipv4": "${database/net.vpc.cidr_block}",
+          "description": "To the web app containers, in the VPC",
+          "from_port": 8000,
+          "ip_protocol": "tcp",
+          "security_group_id": "${app/app.alb_sg.id}",
+          "tags": {
+            "team": "platform"
+          },
+          "to_port": 8000
+        }
+      },
+      {
+        "key": "app.app_sg_from_alb",
+        "type": "aws_vpc_security_group_ingress_rule",
+        "config": {
+          "cidr_ipv4": "${database/net.vpc.cidr_block}",
+          "description": "Web app traffic from the load balancer, in the VPC",
+          "from_port": 8000,
+          "ip_protocol": "tcp",
+          "security_group_id": "${database/net.app_sg.id}",
+          "tags": {
+            "team": "platform"
+          },
+          "to_port": 8000
+        }
+      },
+      {
+        "key": "app.alb",
+        "type": "aws_lb",
+        "config": {
+          "internal": false,
+          "load_balancer_type": "application",
+          "name": "web",
+          "security_groups": [
+            "${app/app.alb_sg.id}"
+          ],
+          "subnets": [
+            "${database/net.subnet_public_a.id}",
+            "${database/net.subnet_public_b.id}"
+          ],
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.target_group",
+        "type": "aws_lb_target_group",
+        "config": {
+          "health_check": [
+            {
+              "matcher": "200",
+              "path": "/health"
+            }
+          ],
+          "name": "web",
+          "port": 8000,
+          "protocol": "HTTP",
+          "tags": {
+            "team": "platform"
+          },
+          "target_type": "ip",
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "app.certificate",
+        "type": "aws_acm_certificate",
+        "config": {
+          "domain_name": "app.acme.example",
+          "tags": {
+            "team": "platform"
+          },
+          "validation_method": "DNS"
+        }
+      },
+      {
+        "key": "app.certificate_validation",
+        "type": "aws_acm_certificate_validation",
+        "config": {
+          "certificate_arn": "${app/app.certificate.arn}"
+        }
+      },
+      {
+        "key": "app.listener_https",
+        "type": "aws_lb_listener",
+        "config": {
+          "certificate_arn": "${app/app.certificate_validation.certificate_arn}",
+          "default_action": [
+            {
+              "target_group_arn": "${app/app.target_group.arn}",
+              "type": "forward"
+            }
+          ],
+          "load_balancer_arn": "${app/app.alb.arn}",
+          "port": 443,
+          "protocol": "HTTPS",
+          "ssl_policy": "ELBSecurityPolicy-TLS13-1-2-2021-06",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.service",
+        "type": "aws_ecs_service",
+        "config": {
+          "cluster": "${app/app.cluster.arn}",
+          "desired_count": 1,
+          "launch_type": "FARGATE",
+          "load_balancer": [
+            {
+              "container_name": "web",
+              "container_port": 8000,
+              "target_group_arn": "${app/app.target_group.arn}"
+            }
+          ],
+          "name": "web",
+          "network_configuration": [
+            {
+              "assign_public_ip": false,
+              "security_groups": [
+                "${database/net.app_sg.id}"
+              ],
+              "subnets": [
+                "${database/net.subnet_private_a.id}",
+                "${database/net.subnet_private_b.id}"
+              ]
+            }
+          ],
+          "tags": {
+            "Name": "${app/app.cluster.name}-svc",
+            "team": "platform"
+          },
+          "task_definition": "${app/app.task.arn}"
+        },
+        "depends_on": [
+          "app/app.listener_https"
+        ]
+      }
+    ],
+    "blockers": [
+      "The intent asks for \"one replica\" in its first paragraph, but its check \"There are exactly two healthy replicas at rest.\" requires exactly two: the two sentences contradict each other. Change one of them."
+    ],
+    "checks": [
+      {
+        "name": "`/health` on the web app's domain answers 200 within 60 seconds of the end of the apply.",
+        "type": "http_get",
+        "url": "https://app.acme.example/health",
+        "status": 200,
+        "within": "60s"
+      },
+      {
+        "name": "The certificate is valid for more than 20 days.",
+        "type": "tls_days",
+        "host": "app.acme.example",
+        "min_days": 20
+      },
+      {
+        "name": "The number of healthy replicas at rest is the requested one.",
+        "type": "resource_attr",
+        "resource": "app/app.service",
+        "path": "desired_count",
+        "op": "eq",
+        "value": 1
+      }
+    ],
+    "patch": null
+  },
+  {
+    "intent": "app",
+    "hash": "sha256:231809c2bb579dc33bf956f02f983d3d70e11144d2022c8d2655f73f805b6612",
+    "resources": [
+      {
+        "key": "app.cluster",
+        "type": "aws_ecs_cluster",
+        "config": {
+          "name": "web",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.execution_role",
+        "type": "aws_iam_role",
+        "config": {
+          "assume_role_policy": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ecs-tasks.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "description": "Lets ECS start the web app tasks and read the database secret",
+          "name": "web-execution",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.execution_role_policy",
+        "type": "aws_iam_role_policy",
+        "config": {
+          "name": "read-database-secret",
+          "policy": {
+            "Statement": [
+              {
+                "Action": "secretsmanager:GetSecretValue",
+                "Effect": "Allow",
+                "Resource": "${database/db.instance.master_user_secret.0.secret_arn}"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "role": "${app/app.execution_role.name}"
+        }
+      },
+      {
+        "key": "app.task",
+        "type": "aws_ecs_task_definition",
+        "config": {
+          "container_definitions": [
+            {
+              "essential": true,
+              "image": "ghcr.io/acme/web:1.4.2",
+              "name": "web",
+              "portMappings": [
+                {
+                  "containerPort": 8000,
+                  "protocol": "tcp"
+                }
+              ],
+              "secrets": [
+                {
+                  "name": "DATABASE_URL",
+                  "valueFrom": "${database/db.instance.master_user_secret.0.secret_arn}"
+                }
+              ]
+            }
+          ],
+          "cpu": "256",
+          "execution_role_arn": "${app/app.execution_role.arn}",
+          "family": "web",
+          "memory": "512",
+          "network_mode": "awsvpc",
+          "requires_compatibilities": [
+            "FARGATE"
+          ],
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.alb_sg",
+        "type": "aws_security_group",
+        "config": {
+          "description": "Public load balancer of the web app",
+          "name": "web-alb",
+          "tags": {
+            "team": "platform"
+          },
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "app.alb_sg_https",
+        "type": "aws_vpc_security_group_ingress_rule",
+        "config": {
+          "cidr_ipv4": "0.0.0.0/0",
+          "description": "HTTPS from the internet",
+          "from_port": 443,
+          "ip_protocol": "tcp",
+          "security_group_id": "${app/app.alb_sg.id}",
+          "tags": {
+            "team": "platform"
+          },
+          "to_port": 443
+        }
+      },
+      {
+        "key": "app.alb_sg_to_app",
+        "type": "aws_vpc_security_group_egress_rule",
+        "config": {
+          "cidr_ipv4": "${database/net.vpc.cidr_block}",
+          "description": "To the web app containers, in the VPC",
+          "from_port": 8000,
+          "ip_protocol": "tcp",
+          "security_group_id": "${app/app.alb_sg.id}",
+          "tags": {
+            "team": "platform"
+          },
+          "to_port": 8000
+        }
+      },
+      {
+        "key": "app.app_sg_from_alb",
+        "type": "aws_vpc_security_group_ingress_rule",
+        "config": {
+          "cidr_ipv4": "${database/net.vpc.cidr_block}",
+          "description": "Web app traffic from the load balancer, in the VPC",
+          "from_port": 8000,
+          "ip_protocol": "tcp",
+          "security_group_id": "${database/net.app_sg.id}",
+          "tags": {
+            "team": "platform"
+          },
+          "to_port": 8000
+        }
+      },
+      {
+        "key": "app.alb",
+        "type": "aws_lb",
+        "config": {
+          "internal": false,
+          "load_balancer_type": "application",
+          "name": "web",
+          "security_groups": [
+            "${app/app.alb_sg.id}"
+          ],
+          "subnets": [
+            "${database/net.subnet_public_a.id}",
+            "${database/net.subnet_public_b.id}"
+          ],
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.target_group",
+        "type": "aws_lb_target_group",
+        "config": {
+          "health_check": [
+            {
+              "matcher": "200",
+              "path": "/health"
+            }
+          ],
+          "name": "web",
+          "port": 8000,
+          "protocol": "HTTP",
+          "tags": {
+            "team": "platform"
+          },
+          "target_type": "ip",
+          "vpc_id": "${database/net.vpc.id}"
+        }
+      },
+      {
+        "key": "app.certificate",
+        "type": "aws_acm_certificate",
+        "config": {
+          "domain_name": "app.acme.example",
+          "tags": {
+            "team": "platform"
+          },
+          "validation_method": "DNS"
+        }
+      },
+      {
+        "key": "app.certificate_validation",
+        "type": "aws_acm_certificate_validation",
+        "config": {
+          "certificate_arn": "${app/app.certificate.arn}"
+        }
+      },
+      {
+        "key": "app.listener_https",
+        "type": "aws_lb_listener",
+        "config": {
+          "certificate_arn": "${app/app.certificate_validation.certificate_arn}",
+          "default_action": [
+            {
+              "target_group_arn": "${app/app.target_group.arn}",
+              "type": "forward"
+            }
+          ],
+          "load_balancer_arn": "${app/app.alb.arn}",
+          "port": 443,
+          "protocol": "HTTPS",
+          "ssl_policy": "ELBSecurityPolicy-TLS13-1-2-2021-06",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.service",
+        "type": "aws_ecs_service",
+        "config": {
+          "cluster": "${app/app.cluster.arn}",
+          "desired_count": 2,
+          "launch_type": "FARGATE",
+          "load_balancer": [
+            {
+              "container_name": "web",
+              "container_port": 8000,
+              "target_group_arn": "${app/app.target_group.arn}"
+            }
+          ],
+          "name": "web",
+          "network_configuration": [
+            {
+              "assign_public_ip": false,
+              "security_groups": [
+                "${database/net.app_sg.id}"
+              ],
+              "subnets": [
+                "${database/net.subnet_private_a.id}",
+                "${database/net.subnet_private_b.id}"
+              ]
+            }
+          ],
+          "tags": {
+            "Name": "${app/app.cluster.name}-svc",
+            "team": "platform"
+          },
+          "task_definition": "${app/app.task.arn}"
+        },
+        "depends_on": [
+          "app/app.listener_https"
+        ]
+      }
+    ],
+    "blockers": null,
+    "checks": [
+      {
+        "name": "`/health` on the web app's domain answers 200 within 60 seconds of the end of the apply.",
+        "type": "http_get",
+        "url": "https://app.acme.example/health",
+        "status": 200,
+        "within": "60s"
+      },
+      {
+        "name": "The certificate is valid for more than 20 days.",
+        "type": "tls_days",
+        "host": "app.acme.example",
+        "min_days": 20
+      },
+      {
+        "name": "There are exactly two healthy replicas at rest.",
+        "type": "resource_attr",
+        "resource": "app/app.service",
+        "path": "desired_count",
+        "op": "eq",
+        "value": 2
+      }
+    ],
+    "patch": null
+  },
+  {
+    "intent": "app",
+    "hash": "sha256:053d93b66f689021336f7366864529bdab19e867706166542e9abb6bd676bda8",
+    "resources": null,
+    "blockers": null,
+    "checks": null,
+    "patch": [
+      {
+        "op": "set",
+        "key": "app.cluster",
+        "path": "name",
+        "value": "staging-web"
+      },
+      {
+        "op": "set",
+        "key": "app.cluster",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.execution_role",
+        "path": "name",
+        "value": "staging-web-execution"
+      },
+      {
+        "op": "set",
+        "key": "app.execution_role",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.task",
+        "path": "family",
+        "value": "staging-web"
+      },
+      {
+        "op": "set",
+        "key": "app.task",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.alb_sg",
+        "path": "description",
+        "value": "Public load balancer of the staging web app"
+      },
+      {
+        "op": "set",
+        "key": "app.alb_sg",
+        "path": "name",
+        "value": "staging-web-alb"
+      },
+      {
+        "op": "set",
+        "key": "app.alb_sg",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.alb_sg_https",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.alb_sg_to_app",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.app_sg_from_alb",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.alb",
+        "path": "name",
+        "value": "staging-web"
+      },
+      {
+        "op": "set",
+        "key": "app.alb",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.target_group",
+        "path": "name",
+        "value": "staging-web"
+      },
+      {
+        "op": "set",
+        "key": "app.target_group",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.certificate",
+        "path": "domain_name",
+        "value": "staging.acme.example"
+      },
+      {
+        "op": "set",
+        "key": "app.certificate",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.listener_https",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.service",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.service",
+        "path": "name",
+        "value": "web"
+      },
+      {
+        "op": "checks",
+        "value": [
+          {
+            "name": "`/health` on the web app's domain answers 200 within 60 seconds of the end of the apply.",
+            "status": 200,
+            "type": "http_get",
+            "url": "https://staging.acme.example/health",
+            "within": "60s"
+          },
+          {
+            "host": "staging.acme.example",
+            "min_days": 20,
+            "name": "The certificate is valid for more than 20 days.",
+            "type": "tls_days"
+          },
+          {
+            "name": "There are exactly two healthy replicas at rest.",
+            "op": "eq",
+            "path": "desired_count",
+            "resource": "app/app.service",
+            "type": "resource_attr",
+            "value": 2
+          }
+        ]
+      }
+    ]
+  }
+]

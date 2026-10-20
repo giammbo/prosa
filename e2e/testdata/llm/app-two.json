@@ -1,0 +1,93 @@
+{
+  "prompt_version": "m7-2",
+  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "turns": [
+    {
+      "id": "msg_01n5sxLmqS5YkPFchLgvGxLS",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EowCiqHua7p0iYTVgbmvZEQ/bGSERp58noVitbKvEbeaeRArZ+WEXbPpXd5ClGPYu0nF4iGWDM8CGELcZhMohb1z6V+CZ3EgxEBlyIdfILWEedjJij5+c1kWwejvQXQPjBYET53W/aEHknhhGD4YRzBexCtHTMs6iu0B2TeYpKIR8gujzuR9zeTv8PhV9uUIepOdiGfvHFT2ECYNujw5gzpIMUTBJuK//DGEeQR8f5wDiG83aT"
+        },
+        {
+          "type": "text",
+          "text": "Both the first paragraph and the check now say two replicas: only the service's desired count and the replicas check change.",
+          "citations": null
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_012t9SVZQrYfCjgLYPVLXh5y",
+          "name": "submit_changes",
+          "input": {
+            "changes": [
+              {
+                "op": "set",
+                "key": "app.cluster",
+                "path": "name",
+                "value": "web"
+              },
+              {
+                "op": "set",
+                "key": "app.task",
+                "path": "family",
+                "value": "web"
+              },
+              {
+                "op": "set",
+                "key": "app.service",
+                "path": "desired_count",
+                "value": 2
+              },
+              {
+                "op": "set",
+                "key": "app.service",
+                "path": "name",
+                "value": "web"
+              },
+              {
+                "op": "checks",
+                "value": [
+                  {
+                    "name": "`/health` on the web app's domain answers 200 within 60 seconds of the end of the apply.",
+                    "status": 200,
+                    "type": "http_get",
+                    "url": "https://app.acme.example/health",
+                    "within": "60s"
+                  },
+                  {
+                    "host": "app.acme.example",
+                    "min_days": 20,
+                    "name": "The certificate is valid for more than 20 days.",
+                    "type": "tls_days"
+                  },
+                  {
+                    "name": "There are exactly two healthy replicas at rest.",
+                    "op": "eq",
+                    "path": "desired_count",
+                    "resource": "app/app.service",
+                    "type": "resource_attr",
+                    "value": 2
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 900,
+        "output_tokens": 611,
+        "cache_creation_input_tokens": 2360,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

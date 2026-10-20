@@ -1,0 +1,245 @@
+{
+  "prompt_version": "m7-2",
+  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "turns": [
+    {
+      "id": "msg_015nw8L5sd9pdjoC4UNUJYZC",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EoaYPFZFo22JK4wNC6BJtR6nHlTNeYhSCdfu/PmOXqi8DiHVSEetbXJguyF5/RIUY7B5MOoAmDuHYy7KylAEjJ0BjzY2+nRL8ZmxUMCvbp6Ol6isuAqnN2gv4R7A9q5CCFZCjMiXYN2dRUD9VANgFBOWs37vmKaJnFj17Ue0+BjJzaHVTH1PgnHxaR2NNChFgp58BWJMaGsUq22usaHYAORSOB35Orayr8qCQoXSGUcXLJTSKX"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01DsbhQzu9PJzqaQB1SDbih4",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_ecs_cluster"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01eUgC9cKiJinWXMwNLSPC3R",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_iam_role"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01MHZisxMb6FEsK5ytZFUMVa",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_ecs_task_definition"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Zu13UXZ42hw9oXjKBt4kgm",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_security_group"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 900,
+        "output_tokens": 442,
+        "cache_creation_input_tokens": 2360,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    },
+    {
+      "id": "msg_01gTs6RFcpta69UorcD2Bb7t",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Eoqxk3loKTMPygApNP95Dg6HFKWsExV+tHehQkQaO/+ir0Kg61cO6UY9dbcCvo7yOqbxcFiRBMtrk+1fVTHRwJ1xBdKaOc60ssZV/wCMYIPDuxlAhPzC/XxZten0Nm0P15Rqrh2bykyjrFiqoXU+uPG6RWuviYmJs560+5O1W9veveZsGH9siFqnqqTicwR6OAYjYG8gLH8VxQvsCVhrvg5HjdJuGnblMrSIrcHouR27s9sl9q"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_011h4fHzA3ucKC1YTD1EGGCJ",
+          "name": "submit_changes",
+          "input": {
+            "changes": [
+              {
+                "op": "set",
+                "key": "app.cluster",
+                "path": "name",
+                "value": "staging-web"
+              },
+              {
+                "op": "set",
+                "key": "app.cluster",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.execution_role",
+                "path": "name",
+                "value": "staging-web-execution"
+              },
+              {
+                "op": "set",
+                "key": "app.execution_role",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.task",
+                "path": "family",
+                "value": "staging-web"
+              },
+              {
+                "op": "set",
+                "key": "app.task",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg",
+                "path": "description",
+                "value": "Public load balancer of the staging web app"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg",
+                "path": "name",
+                "value": "staging-web-alb"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg_https",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg_to_app",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.app_sg_from_alb",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.alb",
+                "path": "name",
+                "value": "staging-web"
+              },
+              {
+                "op": "set",
+                "key": "app.alb",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.target_group",
+                "path": "name",
+                "value": "staging-web"
+              },
+              {
+                "op": "set",
+                "key": "app.target_group",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.certificate",
+                "path": "domain_name",
+                "value": "staging.acme.example"
+              },
+              {
+                "op": "set",
+                "key": "app.certificate",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.listener_https",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.service",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.service",
+                "path": "name",
+                "value": "web"
+              },
+              {
+                "op": "checks",
+                "value": [
+                  {
+                    "name": "`/health` on the web app's domain answers 200 within 60 seconds of the end of the apply.",
+                    "status": 200,
+                    "type": "http_get",
+                    "url": "https://staging.acme.example/health",
+                    "within": "60s"
+                  },
+                  {
+                    "host": "staging.acme.example",
+                    "min_days": 20,
+                    "name": "The certificate is valid for more than 20 days.",
+                    "type": "tls_days"
+                  },
+                  {
+                    "name": "The number of healthy replicas at rest is the requested one.",
+                    "op": "eq",
+                    "path": "desired_count",
+                    "resource": "app/app.service",
+                    "type": "resource_attr",
+                    "value": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 5600,
+        "output_tokens": 997,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 3702,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

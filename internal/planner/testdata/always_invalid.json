@@ -1,0 +1,129 @@
+{
+  "prompt_version": "m7-2",
+  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "turns": [
+    {
+      "id": "msg_01LvpYv8rU3xAE7bS0hW2mCf",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpgCCkYICBgCKkCh8a4VjC6uDg2wQ7rS9xY1zB3dF5hJ7lN9pR1tV3xZ5bD7fH9jL1nP3rT5vX7zB9dF1hJ3lN5pR7tV9xZEgx8mDp4AyV6tS0wO7bLlD3g2hU9pCrY7vQ4aW6NoG9sE1hV3xA5bD8fH0jL2nP4rT6vX8zB0dF2hJ4lN6pR8tV0xZ2bD4fH6jL8nP0rT2vX4zB6dF8hJ0lN2pR4tV6xZ8bD0fH2jL4nP6rT8vX0zB2dF4hJ6lN8pR0tV2xZ4bD6fH8jL0nP2rT4vX6zB8dF0hJ2lN4pR6tV8xZ0bD2fH4jL6nP8rT0vX2zB4dF6hJ8lN0pR2tGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01BjP4tQ8vW0xY2zA4cD6eFg",
+          "name": "submit_desired_state",
+          "input": {
+            "resources": [
+              {
+                "key": "queue.orders",
+                "type": "aws_sqs_queue",
+                "config": {
+                  "name": "orders",
+                  "retention": "4d"
+                }
+              }
+            ],
+            "blockers": []
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 312,
+        "output_tokens": 188,
+        "cache_creation_input_tokens": 2087,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    },
+    {
+      "id": "msg_01MwqZw9sV4yBF8cT1iX3nDg",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpACCkYICBgCKkDi9b5WkD7vEh3xR8sT0yZ2aC4eG6iK8mO0qS2uW4yA6cE8gI0kM2oQ4sU6wY8aC0eG2iK4mO6qS8uWEgy9nEq5BzW7uT1xP8cMmE4h3iV0qDsZ8wR5bX7OpH0tF2iW4yB6cE9gI1kM3oQ5sU7wY9aC1eG3iK5mO7qS9uW1yA3cE5gI7kM9oQ1sU3wY5aC7eG9iK1mO3qS5uW7yA9cE1gI3kM5oQ7sU9wY1aC3eG5iK7mO9qS1uW3yA5cE7gI9kM1oQ3sU5wY7aC9eG1iK3mO5qS7uW9yA1cE3gI5kM7oQ9sU1wY3aC5eG7iK9mO1qS3uW5yA7cE9gI1kM3oGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01CkQ5uR9wX1yZ3aB5dE7fGh",
+          "name": "submit_desired_state",
+          "input": {
+            "resources": [
+              {
+                "key": "queue.orders",
+                "type": "aws_sqs_queue",
+                "config": {
+                  "name": "orders",
+                  "retention_days": 4
+                }
+              }
+            ],
+            "blockers": []
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 176,
+        "output_tokens": 171,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 2399,
+        "service_tier": "standard"
+      }
+    },
+    {
+      "id": "msg_01NxrAx0tW5zCG9dU2jY4oEh",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpACCkYICBgCKkDj0c6XlE8wFi4yS9tU1zA3bD5fH7jL9nP1rT3vX5zB7dF9hJ1lN3pR5tV7xZ9bD1fH3jL5nP7rT9vXEgz0oFr6CaX8vU2yQ9dNnF5i4jW1rEtA9xS6cY8PqI1uG3jX5zC7dF0hJ2lN4pR6tV8xZ0bD2fH4jL6nP8rT0vX2zB4dF6hJ8lN0pR2tV4xZ6bD8fH0jL2nP4rT6vX8zB0dF2hJ4lN6pR8tV0xZ2bD4fH6jL8nP0rT2vX4zB6dF8hJ0lN2pR4tV6xZ8bD0fH2jL4nP6rT8vX0zB2dF4hJ6lN8pR0tV2xZ4bD6fH8jL0nP2rT4vXGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01DlR6vS0xY2zA4bC6eF8gHi",
+          "name": "submit_desired_state",
+          "input": {
+            "resources": [
+              {
+                "key": "queue.orders",
+                "type": "aws_sqs_queue",
+                "config": {
+                  "name": "orders",
+                  "message_retention_seconds": 345600
+                }
+              }
+            ],
+            "blockers": []
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 170,
+        "output_tokens": 160,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 2399,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

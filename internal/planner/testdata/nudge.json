@@ -1,0 +1,74 @@
+{
+  "prompt_version": "m7-2",
+  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "turns": [
+    {
+      "id": "msg_01RauDa3wZ8cFJ2gX5mB7rHk",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpgCCkYICBgCKkCl2e8ZnG0yHk6aU1vW3bC5dF7hJ9lN1pR3tV5xZ7bD9fH1jL3nP5rT7vX9zB1dF3hJ5lN7pR9tV1xZEgx2qHt8EcZ0xW4aS1fPpH7k6lY3tGvC1zU8eA0RsK3wI5lZ7bE9fH2jL4nP6rT8vX0zB2dF4hJ6lN8pR0tV2xZ4bD6fH8jL0nP2rT4vX6zB8dF0hJ2lN4pR6tV8xZ0bD2fH4jL6nP8rT0vX2zB4dF6hJ8lN0pR2tV4xZ6bD8fH0jL2nP4rT6vX8zB0dF2hJ4lN6pR8tV0xZ2bD4fH6jL8nP0rT2vX4zB6dF8hJ0lN2pR4tV6xGAE="
+        },
+        {
+          "type": "text",
+          "text": "The intent needs a single SQS queue named orders with four days of retention."
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 312,
+        "output_tokens": 122,
+        "cache_creation_input_tokens": 2087,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    },
+    {
+      "id": "msg_01SbvEb4xA9dGK3hY6nC8sIl",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpACCkYICBgCKkDm3f9AoH1zIl7bV2wX4cD6eG8iK0mO2qS4uW6yA8cE0gI2kM4oQ6sU8wY0aC2eG4iK6mO8qS0uW2yAEgy3rIu9FdA1yX5bT2gQqI8l7mZ4uHwD2aV9fB1StL4xJ6mA8cF0gI3kM5oQ7sU9wY1aC3eG5iK7mO9qS1uW3yA5cE7gI9kM1oQ3sU5wY7aC9eG1iK3mO5qS7uW9yA1cE3gI5kM7oQ9sU1wY3aC5eG7iK9mO1qS3uW5yA7cE9gI1kM3oQ5sU7wY9aC1eG3iK5mO7qS9uW1yA3cE5gI7kM9oQ1sU3wY5aC7eG9iK1mO3qS5uW7yA9cE1gI3kM5oQ7sU9wYGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01FnT8xU2zA4bC6dE8gH0iJk",
+          "name": "submit_desired_state",
+          "input": {
+            "resources": [
+              {
+                "key": "queue.orders",
+                "type": "aws_sqs_queue",
+                "config": {
+                  "name": "orders",
+                  "message_retention_seconds": 345600
+                }
+              }
+            ],
+            "blockers": []
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 141,
+        "output_tokens": 150,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 2399,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

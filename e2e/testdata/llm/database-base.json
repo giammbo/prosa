@@ -1,0 +1,537 @@
+{
+  "prompt_version": "m7-2",
+  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "turns": [
+    {
+      "id": "msg_01ywvKWfvTbtZLPUjSvMD6on",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Eo1ySihM6APVn8PiIjuzUs2YG1vREMkl5ququsOdUaYDjSaEK5JQCKymMt7oBqqasG9fQrAMxyfjesWX36oqM56kP3DajXfyAv0eeAyMrKK2px5i4WGPCysfWbVhv8S3PsjJgc8SRjlCRvoxzZBgk9qBl35qXXix7juYfWzLxspJ0otZn3DZCZrM5NUL7+S92SIop6oxt/DhUkXT/3pOAbboAvHxk6YkoaCIL4b4qzn6eRJfjD"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01GNhRP5Gou94NkfBu98D3bF",
+          "name": "search_resource_types",
+          "input": {
+            "query": "vpc subnet internet gateway nat gateway eip"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Ewent8jS32RZzcPf9nXNfj",
+          "name": "search_resource_types",
+          "input": {
+            "query": "route table route association"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01WSNEzJpoRGrUFZ69t1knVj",
+          "name": "search_resource_types",
+          "input": {
+            "query": "security group ingress egress rule"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01RSBaJ1rRaC21oM1UxL5hE3",
+          "name": "search_resource_types",
+          "input": {
+            "query": "db instance subnet group"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 900,
+        "output_tokens": 467,
+        "cache_creation_input_tokens": 2360,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    },
+    {
+      "id": "msg_01nEdYggnRwUm1HXpegWdGiQ",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EooutB34oecC7twFlJ1gylrvow6Q/aghWBNwbRW1YvjTYc/lF9XJ3jIY/FDUtIcCu1j620vphMaXekNZyKsm1Ccn45c9QI3NFc5qeOT3Zv9sWf4r1LR+Z7oxwQm2BQuKPu+L17aIDAdrEo1Mg24ZwQHyKky9tG9g44OICc/5B/7r97o9SaBtVDDAEbay351LdHh3w8JcoisUdCLimlfr4/vu4bj5rqHpwnf8S96BBi2qW8KcFx"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01C3ii5SicrxYZDa6MaRbx7G",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_vpc"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01LN9LDMtvdCwRJN7mxWuewb",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_subnet"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_013J2kzpRxUrBQLeAFPAGPDn",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_internet_gateway"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01s738aZverens216nqX5Bau",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_eip"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01XrhEZ1xcKqbbiBL9zyQNGc",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_nat_gateway"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01yQ3vWXfgKsbZo1AguZjdf6",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_route_table"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_012BqdAuikaY51DhDmvzHpjF",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_route"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01kC2EoFpYafkThmDXqwThGy",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_route_table_association"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 280,
+        "output_tokens": 599,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 3727,
+        "service_tier": "standard"
+      }
+    },
+    {
+      "id": "msg_01PSGrQxbYkxWPMGC9gXoeAZ",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EoMPoWT/kIIOWRDVZGwXIa5wMqve229niyA1WvwHKSdcJF85wpkZvg9p4BX+bdvJNbrCJo+ubaTTvM5B1bzI7TUpeiDT/mqWG3Ekr2YjeeAqI3MMAIa3NGYy6fplyiteZq0BzQdDObLNZ6Nmb/cYThGD3oGhs2Gj2DbL6jCDHcHRzfZV0YQy9SGVSiAjrYfFroviABIDVO/2DW4s0mAQwnItr1uZoAq68ms5rdTt8pWDNAt4/f"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01aTNteZLsj8fjik7EqH7ZMc",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_security_group"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_018XP4MP7b2o5VoNc2UUaeQd",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_vpc_security_group_ingress_rule"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ibENh7f3aG8QHxFYHJyaXP",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_vpc_security_group_egress_rule"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01qur5bLza9v7canSDhagMrj",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_db_subnet_group"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01D2Sc6mW8pQ8gd4bEw1g2gf",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_db_instance"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 11200,
+        "output_tokens": 496,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 4606,
+        "service_tier": "standard"
+      }
+    },
+    {
+      "id": "msg_01dD9hvxtitcAiRLT6SrTktn",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EoLLWH0bMqprrO14XR6v/mJlbG9+9BqM09RLwzd/YPU/2p7OALaykf/YvTtSkZ+TaMAsdy4QdU68Izaotk8pIfsA0pigr4ECTeDYuog45Ij2Rl2zae40c38CUdH7sEbUg42qMnKF2c6sybMvnH9+NEnsEXFKEeo4I+b5BeMEW93s3TQVwdxE+WRdLI8/XcDv4HbIGNGuz+/+c1Abtel8w5FVPPk4x50RIPo9ezvqT9E5pVS7OC"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01zYD9bWQXXta93296o6dg3z",
+          "name": "submit_desired_state",
+          "input": {
+            "resources": [
+              {
+                "key": "net.vpc",
+                "type": "aws_vpc",
+                "config": {
+                  "cidr_block": "10.20.0.0/16",
+                  "enable_dns_hostnames": true,
+                  "enable_dns_support": true,
+                  "tags": {
+                    "team": "platform"
+                  }
+                }
+              },
+              {
+                "key": "net.igw",
+                "type": "aws_internet_gateway",
+                "config": {
+                  "tags": {
+                    "team": "platform"
+                  },
+                  "vpc_id": "${database/net.vpc.id}"
+                }
+              },
+              {
+                "key": "net.subnet_public_a",
+                "type": "aws_subnet",
+                "config": {
+                  "availability_zone": "eu-south-1a",
+                  "cidr_block": "10.20.0.0/24",
+                  "tags": {
+                    "team": "platform"
+                  },
+                  "vpc_id": "${database/net.vpc.id}"
+                }
+              },
+              {
+                "key": "net.subnet_public_b",
+                "type": "aws_subnet",
+                "config": {
+                  "availability_zone": "eu-south-1b",
+                  "cidr_block": "10.20.1.0/24",
+                  "tags": {
+                    "team": "platform"
+                  },
+                  "vpc_id": "${database/net.vpc.id}"
+                }
+              },
+              {
+                "key": "net.subnet_private_a",
+                "type": "aws_subnet",
+                "config": {
+                  "availability_zone": "eu-south-1a",
+                  "cidr_block": "10.20.10.0/24",
+                  "tags": {
+                    "team": "platform"
+                  },
+                  "vpc_id": "${database/net.vpc.id}"
+                }
+              },
+              {
+                "key": "net.subnet_private_b",
+                "type": "aws_subnet",
+                "config": {
+                  "availability_zone": "eu-south-1b",
+                  "cidr_block": "10.20.11.0/24",
+                  "tags": {
+                    "team": "platform"
+                  },
+                  "vpc_id": "${database/net.vpc.id}"
+                }
+              },
+              {
+                "key": "net.rt_public",
+                "type": "aws_route_table",
+                "config": {
+                  "tags": {
+                    "team": "platform"
+                  },
+                  "vpc_id": "${database/net.vpc.id}"
+                }
+              },
+              {
+                "key": "net.route_public_default",
+                "type": "aws_route",
+                "config": {
+                  "destination_cidr_block": "0.0.0.0/0",
+                  "gateway_id": "${database/net.igw.id}",
+                  "route_table_id": "${database/net.rt_public.id}"
+                }
+              },
+              {
+                "key": "net.rta_public_a",
+                "type": "aws_route_table_association",
+                "config": {
+                  "route_table_id": "${database/net.rt_public.id}",
+                  "subnet_id": "${database/net.subnet_public_a.id}"
+                }
+              },
+              {
+                "key": "net.rta_public_b",
+                "type": "aws_route_table_association",
+                "config": {
+                  "route_table_id": "${database/net.rt_public.id}",
+                  "subnet_id": "${database/net.subnet_public_b.id}"
+                }
+              },
+              {
+                "key": "net.nat_eip",
+                "type": "aws_eip",
+                "config": {
+                  "domain": "vpc",
+                  "tags": {
+                    "team": "platform"
+                  }
+                }
+              },
+              {
+                "key": "net.nat",
+                "type": "aws_nat_gateway",
+                "config": {
+                  "allocation_id": "${database/net.nat_eip.id}",
+                  "subnet_id": "${database/net.subnet_public_a.id}",
+                  "tags": {
+                    "team": "platform"
+                  }
+                }
+              },
+              {
+                "key": "net.rt_private",
+                "type": "aws_route_table",
+                "config": {
+                  "tags": {
+                    "team": "platform"
+                  },
+                  "vpc_id": "${database/net.vpc.id}"
+                }
+              },
+              {
+                "key": "net.route_private_default",
+                "type": "aws_route",
+                "config": {
+                  "destination_cidr_block": "0.0.0.0/0",
+                  "nat_gateway_id": "${database/net.nat.id}",
+                  "route_table_id": "${database/net.rt_private.id}"
+                }
+              },
+              {
+                "key": "net.rta_private_a",
+                "type": "aws_route_table_association",
+                "config": {
+                  "route_table_id": "${database/net.rt_private.id}",
+                  "subnet_id": "${database/net.subnet_private_a.id}"
+                }
+              },
+              {
+                "key": "net.rta_private_b",
+                "type": "aws_route_table_association",
+                "config": {
+                  "route_table_id": "${database/net.rt_private.id}",
+                  "subnet_id": "${database/net.subnet_private_b.id}"
+                }
+              },
+              {
+                "key": "net.app_sg",
+                "type": "aws_security_group",
+                "config": {
+                  "description": "Containers of the application",
+                  "name": "app",
+                  "tags": {
+                    "team": "platform"
+                  },
+                  "vpc_id": "${database/net.vpc.id}"
+                }
+              },
+              {
+                "key": "net.app_sg_egress",
+                "type": "aws_vpc_security_group_egress_rule",
+                "config": {
+                  "cidr_ipv4": "0.0.0.0/0",
+                  "description": "Outbound traffic of the application containers",
+                  "ip_protocol": "-1",
+                  "security_group_id": "${database/net.app_sg.id}",
+                  "tags": {
+                    "team": "platform"
+                  }
+                }
+              },
+              {
+                "key": "db.sg",
+                "type": "aws_security_group",
+                "config": {
+                  "description": "Postgres, reachable only from the application",
+                  "name": "db",
+                  "tags": {
+                    "team": "platform"
+                  },
+                  "vpc_id": "${database/net.vpc.id}"
+                }
+              },
+              {
+                "key": "db.sg_ingress_private_a",
+                "type": "aws_vpc_security_group_ingress_rule",
+                "config": {
+                  "cidr_ipv4": "${database/net.subnet_private_a.cidr_block}",
+                  "description": "Postgres from the private subnet in eu-south-1a",
+                  "from_port": 5432,
+                  "ip_protocol": "tcp",
+                  "security_group_id": "${database/db.sg.id}",
+                  "tags": {
+                    "team": "platform"
+                  },
+                  "to_port": 5432
+                }
+              },
+              {
+                "key": "db.sg_ingress_private_b",
+                "type": "aws_vpc_security_group_ingress_rule",
+                "config": {
+                  "cidr_ipv4": "${database/net.subnet_private_b.cidr_block}",
+                  "description": "Postgres from the private subnet in eu-south-1b",
+                  "from_port": 5432,
+                  "ip_protocol": "tcp",
+                  "security_group_id": "${database/db.sg.id}",
+                  "tags": {
+                    "team": "platform"
+                  },
+                  "to_port": 5432
+                }
+              },
+              {
+                "key": "db.subnet_group",
+                "type": "aws_db_subnet_group",
+                "config": {
+                  "description": "Private subnets",
+                  "name": "db",
+                  "subnet_ids": [
+                    "${database/net.subnet_private_a.id}",
+                    "${database/net.subnet_private_b.id}"
+                  ],
+                  "tags": {
+                    "team": "platform"
+                  }
+                }
+              },
+              {
+                "key": "db.instance",
+                "type": "aws_db_instance",
+                "config": {
+                  "allocated_storage": 20,
+                  "backup_retention_period": 7,
+                  "backup_window": "01:00-01:30",
+                  "db_subnet_group_name": "${database/db.subnet_group.name}",
+                  "engine": "postgres",
+                  "engine_version": "17",
+                  "identifier": "main-db",
+                  "instance_class": "db.t4g.micro",
+                  "manage_master_user_password": true,
+                  "publicly_accessible": false,
+                  "skip_final_snapshot": true,
+                  "storage_encrypted": true,
+                  "tags": {
+                    "team": "platform"
+                  },
+                  "username": "app_admin",
+                  "vpc_security_group_ids": [
+                    "${database/db.sg.id}"
+                  ]
+                }
+              }
+            ],
+            "checks": [
+              {
+                "name": "The database accepts connections from the private subnet and rejects them from the internet.",
+                "type": "resource_attr",
+                "resource": "database/db.instance",
+                "path": "publicly_accessible",
+                "op": "eq",
+                "value": false
+              },
+              {
+                "name": "There is at least one backup newer than 24 hours (after the first day).",
+                "type": "resource_attr",
+                "resource": "database/db.instance",
+                "path": "latest_restorable_time",
+                "op": "within",
+                "value": "24h"
+              },
+              {
+                "name": "Storage is encrypted.",
+                "type": "resource_attr",
+                "resource": "database/db.instance",
+                "path": "storage_encrypted",
+                "op": "eq",
+                "value": true
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 7000,
+        "output_tokens": 2049,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 16302,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

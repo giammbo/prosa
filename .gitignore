@@ -1,0 +1,14 @@
+.DS_Store
+.env
+*.log
+node_modules/
+dist/
+.venv/
+__pycache__/
+/prosa
+/bin/
+.prosa/
+CLAUDE.md
+AGENTS.md
+bin/
+docs/

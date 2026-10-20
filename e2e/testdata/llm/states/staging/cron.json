@@ -1,0 +1,69 @@
+{"resources": [
+  {"key": "job.cluster", "type": "aws_ecs_cluster", "config": {
+    "name": "staging-cron",
+    "tags": {"note": "sentinel-7f3a"}}},
+  {"key": "job.execution_role", "type": "aws_iam_role", "config": {
+    "name": "staging-clearsessions-execution",
+    "description": "Lets ECS start the clearsessions task and read the database secret",
+    "assume_role_policy": {
+      "Version": "2012-10-17",
+      "Statement": [{"Effect": "Allow", "Principal": {"Service": "ecs-tasks.amazonaws.com"}, "Action": "sts:AssumeRole"}]}}},
+  {"key": "job.execution_role_policy", "type": "aws_iam_role_policy", "config": {
+    "name": "read-database-secret",
+    "role": "${cron/job.execution_role.name}",
+    "policy": {
+      "Version": "2012-10-17",
+      "Statement": [{"Effect": "Allow", "Action": "secretsmanager:GetSecretValue", "Resource": "${database/db.instance.master_user_secret.0.secret_arn}"}]}}},
+  {"key": "job.task", "type": "aws_ecs_task_definition", "config": {
+    "family": "staging-clearsessions",
+    "requires_compatibilities": ["FARGATE"],
+    "network_mode": "awsvpc",
+    "cpu": "256",
+    "memory": "512",
+    "execution_role_arn": "${cron/job.execution_role.arn}",
+    "container_definitions": [{
+      "name": "clearsessions",
+      "image": "ghcr.io/acme/web:1.4.2",
+      "essential": true,
+      "command": ["python", "manage.py", "clearsessions"],
+      "secrets": [{"name": "DATABASE_URL", "valueFrom": "${database/db.instance.master_user_secret.0.secret_arn}"}]}]}},
+  {"key": "job.scheduler_role", "type": "aws_iam_role", "config": {
+    "name": "staging-clearsessions-scheduler",
+    "description": "Lets EventBridge Scheduler run the clearsessions task",
+    "assume_role_policy": {
+      "Version": "2012-10-17",
+      "Statement": [{"Effect": "Allow", "Principal": {"Service": "scheduler.amazonaws.com"}, "Action": "sts:AssumeRole"}]}}},
+  {"key": "job.scheduler_role_policy", "type": "aws_iam_role_policy", "config": {
+    "name": "run-clearsessions",
+    "role": "${cron/job.scheduler_role.name}",
+    "policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {"Effect": "Allow", "Action": "ecs:RunTask", "Resource": "${cron/job.task.arn}",
+         "Condition": {"ArnEquals": {"ecs:cluster": "${cron/job.cluster.arn}"}}},
+        {"Effect": "Allow", "Action": "iam:PassRole", "Resource": "${cron/job.execution_role.arn}"}]}}},
+  {"key": "job.schedule", "type": "aws_scheduler_schedule", "config": {
+    "name": "staging-clearsessions",
+    "description": "python manage.py clearsessions every night at 03:00, Rome time",
+    "schedule_expression": "cron(0 3 * * ? *)",
+    "schedule_expression_timezone": "Europe/Rome",
+    "state": "ENABLED",
+    "flexible_time_window": [{"mode": "OFF"}],
+    "target": [{
+      "arn": "${cron/job.cluster.arn}",
+      "role_arn": "${cron/job.scheduler_role.arn}",
+      "ecs_parameters": [{
+        "task_definition_arn": "${cron/job.task.arn}",
+        "launch_type": "FARGATE",
+        "task_count": 1,
+        "network_configuration": [{
+          "subnets": ["${database/net.subnet_private_a.id}", "${database/net.subnet_private_b.id}"],
+          "security_groups": ["${database/net.app_sg.id}"],
+          "assign_public_ip": false}]}]}]}}
+],
+"checks": [
+  {"name": "There is an active schedule with the stated time.", "type": "resource_attr",
+   "resource": "cron/job.schedule", "path": "schedule_expression", "op": "eq", "value": "cron(0 3 * * ? *)"},
+  {"name": "The last run (after the first night) finished successfully.", "type": "unverifiable",
+   "reason": "The outcome of the scheduled task's runs is not an attribute of any resource of the provider: no check type can read it."}
+]}

@@ -1,0 +1,135 @@
+{
+  "prompt_version": "m7-2",
+  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "turns": [
+    {
+      "id": "msg_011mooLjkKz6L1yPjnLwbGWA",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EoxJcOIcGB7DJdpqoLe3aEQmgKT53mo2xAA78+q45ENpSk38nnuCkLrJ99bUBlGfk3n3eolPbl/oPWy0ew0l1yUT9Bvg38uv+CPiORY4rGhuSujW121SY6PHuxUtXTCkM+NG1bPvsa/KLbR6AQfQsxwHcjPlTh4jUgzzTaSsDTfq517poay3My/RmYaX/waq+oY8exbwQzYjX2rfWErn+LOrS5OdBfGdAEdoE66cWO4OGtQ/HI"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01VAQnSqYVroeEueMPyozmuB",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_ecs_cluster"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01cEQEDHMmpL8Vd5xeWjJfGC",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_iam_role"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ZKdA5wGrcE14NruumVYG7m",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_ecs_task_definition"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01TUAMuDb3fXwbcfo4b4XupV",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_scheduler_schedule"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 900,
+        "output_tokens": 444,
+        "cache_creation_input_tokens": 2360,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    },
+    {
+      "id": "msg_01eg4mub6pxRxWjHwkFVFYBE",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Eobj7h7zdf2WSIM64KZ/3TVovbG+mkrcZB8eVNU5x/hfz727IGLPIOjMFceZ8zHD7DLtIMzPROAWkLpT0A+XXjBBIHXtNjYkl8vJ0eb+jR+/6r5YC0+eHsZbNCQBil+Rvhvcgw6blbVrB/O1rEjbcmw4nSt3SDJ0k0y1ZPhU6azey6ZLYgp++Ace2K02dRP1zx1O4o5TZq4uz0Uj2d3/fBfX0Cyly1RIudlrf8OuhWveY/c/ml"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01bFDLckNQdw4tzFUBcvpNqP",
+          "name": "submit_changes",
+          "input": {
+            "changes": [
+              {
+                "op": "set",
+                "key": "job.cluster",
+                "path": "name",
+                "value": "prod-cron"
+              },
+              {
+                "op": "set",
+                "key": "job.execution_role",
+                "path": "name",
+                "value": "prod-clearsessions-execution"
+              },
+              {
+                "op": "set",
+                "key": "job.task",
+                "path": "family",
+                "value": "prod-clearsessions"
+              },
+              {
+                "op": "set",
+                "key": "job.scheduler_role",
+                "path": "name",
+                "value": "prod-clearsessions-scheduler"
+              },
+              {
+                "op": "set",
+                "key": "job.schedule",
+                "path": "name",
+                "value": "prod-clearsessions"
+              },
+              {
+                "op": "set",
+                "key": "alerts.topic",
+                "path": "name",
+                "value": "prod-platform-alerts"
+              },
+              {
+                "op": "set",
+                "key": "alerts.failed_runs",
+                "path": "name",
+                "value": "prod-clearsessions-failed"
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 5600,
+        "output_tokens": 503,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 3704,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

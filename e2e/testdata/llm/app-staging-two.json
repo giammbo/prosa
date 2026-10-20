@@ -1,0 +1,190 @@
+{
+  "prompt_version": "m7-2",
+  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "turns": [
+    {
+      "id": "msg_01g9fT5kCco5yGR8AyD8LkVP",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EovYjzW4vSf6uG+MxrWqTfTw8reQznbtDBBUjxmkb03bdmO/2Vy8quvmMOD7PfuuJHyNL5r0KsqFlp0J6felaKwQXbirEyLLMaJSByStgYn5MbilZNHbOxEteNuE+pRkKbIiyLojPQJMIJwIbKzwP0iQUb7ikA/ZfWW2Ujkb+5029hyup35/x6cPiI97NPapoZUyisjXSYdRXpcxpEwxOTPBkoi1rYJvaSlJLeqXM4G0Flx3K2"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_0115jPZzYJMSzpobYm6F7Erz",
+          "name": "submit_changes",
+          "input": {
+            "changes": [
+              {
+                "op": "set",
+                "key": "app.cluster",
+                "path": "name",
+                "value": "staging-web"
+              },
+              {
+                "op": "set",
+                "key": "app.cluster",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.execution_role",
+                "path": "name",
+                "value": "staging-web-execution"
+              },
+              {
+                "op": "set",
+                "key": "app.execution_role",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.task",
+                "path": "family",
+                "value": "staging-web"
+              },
+              {
+                "op": "set",
+                "key": "app.task",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg",
+                "path": "description",
+                "value": "Public load balancer of the staging web app"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg",
+                "path": "name",
+                "value": "staging-web-alb"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg_https",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.alb_sg_to_app",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.app_sg_from_alb",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.alb",
+                "path": "name",
+                "value": "staging-web"
+              },
+              {
+                "op": "set",
+                "key": "app.alb",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.target_group",
+                "path": "name",
+                "value": "staging-web"
+              },
+              {
+                "op": "set",
+                "key": "app.target_group",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.certificate",
+                "path": "domain_name",
+                "value": "staging.acme.example"
+              },
+              {
+                "op": "set",
+                "key": "app.certificate",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.listener_https",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.service",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.service",
+                "path": "name",
+                "value": "web"
+              },
+              {
+                "op": "checks",
+                "value": [
+                  {
+                    "name": "`/health` on the web app's domain answers 200 within 60 seconds of the end of the apply.",
+                    "status": 200,
+                    "type": "http_get",
+                    "url": "https://staging.acme.example/health",
+                    "within": "60s"
+                  },
+                  {
+                    "host": "staging.acme.example",
+                    "min_days": 20,
+                    "name": "The certificate is valid for more than 20 days.",
+                    "type": "tls_days"
+                  },
+                  {
+                    "name": "There are exactly two healthy replicas at rest.",
+                    "op": "eq",
+                    "path": "desired_count",
+                    "resource": "app/app.service",
+                    "type": "resource_attr",
+                    "value": 2
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 900,
+        "output_tokens": 993,
+        "cache_creation_input_tokens": 2360,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

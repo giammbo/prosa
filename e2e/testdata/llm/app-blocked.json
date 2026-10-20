@@ -1,0 +1,68 @@
+{
+  "prompt_version": "m7-2",
+  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "turns": [
+    {
+      "id": "msg_01qZLRyGdpFG7Y97btDkUF6Q",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Eog2FUaIVHmqyRnVIm6bmzLHEC0dlKInn2U4Gh7NXLi6D43d3S/DVCTHBVVxvIhECal+sAWqcgySzxSoHUlbNKZkIRPCySYBwYEZLvoh2buqevGl3ZkYYNCo3zA9oH95HsnIlWqJA3vydWBjALprtvWIF9iGBAIURBLMfnzGOtM4fwYLPhDX/ErfnoGveog12ZbtwFcNc8axu3lrkIqBiQDMlL2rNRB/lYdsUh2M5o+MgJ3Wjz"
+        },
+        {
+          "type": "text",
+          "text": "The first paragraph now asks for one replica, while the check requires exactly two healthy replicas at rest. I cannot satisfy both, so the intent has to be fixed before it can be planned.",
+          "citations": null
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 900,
+        "output_tokens": 354,
+        "cache_creation_input_tokens": 2360,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    },
+    {
+      "id": "msg_014w8PgYBkdSMsPiiEfF1rMF",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Eomh5WKFi5qcjHXVSOyEznYXOWwZIthzxX9O3zSvGp6xybB/ytRYiBRhfln4CvOWkJ/3DOonnbpatu26MHCKFSSZy/UPLnZnW9TFBqGEv6Qn61nN6VqVCcPgeJLSH9q/69gfnSf1j6ZayYxIfRLJFHcIOzaQ9lEYc34OLkAifeoSMx0yyQeuzat54cLY9LYlRowaJK8VI191r93YFTL0Led8HZ6rWJfiMshkSDlGEjiV0i99HS"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01511yncxoLJSxv6k4v9UBUf",
+          "name": "submit_changes",
+          "input": {
+            "changes": [],
+            "blockers": [
+              "The intent asks for \"one replica\" in its first paragraph, but its check \"There are exactly two healthy replicas at rest.\" requires exactly two: the two sentences contradict each other. Change one of them."
+            ]
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 40,
+        "output_tokens": 387,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 3614,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

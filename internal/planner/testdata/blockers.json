@@ -1,0 +1,49 @@
+{
+  "prompt_version": "m7-2",
+  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "turns": [
+    {
+      "id": "msg_01PysBy1uX6aDH0eV3kZ5pFi",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqACCkYICBgCKkBk1d7YmF9xGj5zT0uV2aB4cE6gI8kM0oQ2sU4wY6aC8eG0iK2mO4qS6uW8yA0cE2gI4kM6oQ8sU0wYEgx1pGs7DbY9wV3zR0eOoG6j5kX2sFuB0yT7dZ9QrJ2vH4kY6aD8eG1iK3mO5qS7uW9yA1cE3gI5kM7oQ9sU1wY3aC5eG7iK9mO1qS3uW5yA7cE9gI1kM3oQ5sU7wY9aC1eG3iK5mO7qS9uW1yA3cE5gI7kM9oQ1sU3wY5aC7eG9iK1mO3qS5uW7yA9cE1gI3kM5oQ7sU9wY1aC3eG5iK7mO9qS1uW3yA5cE7gI9kM1oQ3sU5wY7aC9eG1iK3mO5qS7uGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01EmS7wT1yZ3aB5cD7fG9hIj",
+          "name": "submit_desired_state",
+          "input": {
+            "resources": [
+              {
+                "key": "app.service",
+                "type": "aws_ecs_service",
+                "config": {
+                  "name": "web",
+                  "desired_count": 2
+                }
+              }
+            ],
+            "blockers": [
+              "The intent asks for three replicas, but its check requires exactly two running tasks: the two sentences contradict each other."
+            ]
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 455,
+        "output_tokens": 233,
+        "cache_creation_input_tokens": 2087,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

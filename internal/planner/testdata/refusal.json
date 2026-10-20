@@ -1,0 +1,30 @@
+{
+  "prompt_version": "m7-2",
+  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "turns": [
+    {
+      "id": "msg_01QztCz2vY7bEI1fW4lA6qGj",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [],
+      "stop_reason": "refusal",
+      "stop_sequence": null,
+      "stop_details": {
+        "type": "refusal",
+        "category": "cyber",
+        "explanation": "This request was declined by a safety classifier.",
+        "fallback_credit_token": null,
+        "fallback_has_prefill_claim": false,
+        "recommended_model": null
+      },
+      "usage": {
+        "input_tokens": 2399,
+        "output_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+version: 2
+
+project_name: prosa
+
+builds:
+  - id: prosa
+    main: ./cmd/prosa
+    binary: prosa
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: prosa
+    formats: [tar.gz]
+    name_template: "prosa_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - NOTICE
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github
+
+release:
+  github:
+    owner: giammbo
+    name: prosa

@@ -1,0 +1,111 @@
+{"resources": [
+  {"key": "app.cluster", "type": "aws_ecs_cluster", "config": {
+    "name": "prod-web",
+    "tags": {"team": "platform", "env": "prod"}}},
+  {"key": "app.execution_role", "type": "aws_iam_role", "config": {
+    "name": "prod-web-execution",
+    "description": "Lets ECS start the web app tasks and read the database secret",
+    "assume_role_policy": {
+      "Version": "2012-10-17",
+      "Statement": [{"Effect": "Allow", "Principal": {"Service": "ecs-tasks.amazonaws.com"}, "Action": "sts:AssumeRole"}]},
+    "tags": {"team": "platform", "env": "prod"}}},
+  {"key": "app.execution_role_policy", "type": "aws_iam_role_policy", "config": {
+    "name": "read-database-secret",
+    "role": "${app/app.execution_role.name}",
+    "policy": {
+      "Version": "2012-10-17",
+      "Statement": [{"Effect": "Allow", "Action": "secretsmanager:GetSecretValue", "Resource": "${database/db.instance.master_user_secret.0.secret_arn}"}]}}},
+  {"key": "app.task", "type": "aws_ecs_task_definition", "config": {
+    "family": "prod-web",
+    "requires_compatibilities": ["FARGATE"],
+    "network_mode": "awsvpc",
+    "cpu": "256",
+    "memory": "512",
+    "execution_role_arn": "${app/app.execution_role.arn}",
+    "container_definitions": [{
+      "name": "web",
+      "image": "ghcr.io/acme/web:1.4.2",
+      "essential": true,
+      "portMappings": [{"containerPort": 8000, "protocol": "tcp"}],
+      "secrets": [{"name": "DATABASE_URL", "valueFrom": "${database/db.instance.master_user_secret.0.secret_arn}"}]}],
+    "tags": {"team": "platform", "env": "prod"}}},
+  {"key": "app.alb_sg", "type": "aws_security_group", "config": {
+    "name": "prod-web-alb",
+    "description": "Public load balancer of the prod web app",
+    "vpc_id": "${database/net.vpc.id}",
+    "tags": {"team": "platform", "env": "prod"}}},
+  {"key": "app.alb_sg_https", "type": "aws_vpc_security_group_ingress_rule", "config": {
+    "security_group_id": "${app/app.alb_sg.id}",
+    "description": "HTTPS from the internet",
+    "cidr_ipv4": "0.0.0.0/0",
+    "ip_protocol": "tcp",
+    "from_port": 443,
+    "to_port": 443,
+    "tags": {"team": "platform", "env": "prod"}}},
+  {"key": "app.alb_sg_to_app", "type": "aws_vpc_security_group_egress_rule", "config": {
+    "security_group_id": "${app/app.alb_sg.id}",
+    "description": "To the web app containers, in the VPC",
+    "cidr_ipv4": "${database/net.vpc.cidr_block}",
+    "ip_protocol": "tcp",
+    "from_port": 8000,
+    "to_port": 8000,
+    "tags": {"team": "platform", "env": "prod"}}},
+  {"key": "app.app_sg_from_alb", "type": "aws_vpc_security_group_ingress_rule", "config": {
+    "security_group_id": "${database/net.app_sg.id}",
+    "description": "Web app traffic from the load balancer, in the VPC",
+    "cidr_ipv4": "${database/net.vpc.cidr_block}",
+    "ip_protocol": "tcp",
+    "from_port": 8000,
+    "to_port": 8000,
+    "tags": {"team": "platform", "env": "prod"}}},
+  {"key": "app.alb", "type": "aws_lb", "config": {
+    "name": "prod-web",
+    "load_balancer_type": "application",
+    "internal": false,
+    "security_groups": ["${app/app.alb_sg.id}"],
+    "subnets": ["${database/net.subnet_public_a.id}", "${database/net.subnet_public_b.id}"],
+    "tags": {"team": "platform", "env": "prod"}}},
+  {"key": "app.target_group", "type": "aws_lb_target_group", "config": {
+    "name": "prod-web",
+    "port": 8000,
+    "protocol": "HTTP",
+    "target_type": "ip",
+    "vpc_id": "${database/net.vpc.id}",
+    "health_check": [{"path": "/health", "matcher": "200"}],
+    "tags": {"team": "platform", "env": "prod"}}},
+  {"key": "app.certificate", "type": "aws_acm_certificate", "config": {
+    "domain_name": "www.acme.example",
+    "validation_method": "DNS",
+    "tags": {"team": "platform", "env": "prod"}}},
+  {"key": "app.certificate_validation", "type": "aws_acm_certificate_validation", "config": {
+    "certificate_arn": "${app/app.certificate.arn}"}},
+  {"key": "app.listener_https", "type": "aws_lb_listener", "config": {
+    "load_balancer_arn": "${app/app.alb.arn}",
+    "port": 443,
+    "protocol": "HTTPS",
+    "ssl_policy": "ELBSecurityPolicy-TLS13-1-2-2021-06",
+    "certificate_arn": "${app/app.certificate_validation.certificate_arn}",
+    "default_action": [{"type": "forward", "target_group_arn": "${app/app.target_group.arn}"}],
+    "tags": {"team": "platform", "env": "prod"}}},
+  {"key": "app.service", "type": "aws_ecs_service", "config": {
+    "name": "web",
+    "cluster": "${app/app.cluster.arn}",
+    "task_definition": "${app/app.task.arn}",
+    "desired_count": 2,
+    "launch_type": "FARGATE",
+    "network_configuration": [{
+      "subnets": ["${database/net.subnet_private_a.id}", "${database/net.subnet_private_b.id}"],
+      "security_groups": ["${database/net.app_sg.id}"],
+      "assign_public_ip": false}],
+    "load_balancer": [{"target_group_arn": "${app/app.target_group.arn}", "container_name": "web", "container_port": 8000}],
+    "tags": {"Name": "${app/app.cluster.name}-svc", "team": "platform", "env": "prod"}},
+    "depends_on": ["app/app.listener_https"]}
+],
+"checks": [
+  {"name": "`/health` on the web app's domain answers 200 within 60 seconds of the end of the apply.", "type": "http_get",
+   "url": "https://www.acme.example/health", "status": 200, "within": "60s"},
+  {"name": "The certificate is valid for more than 20 days.", "type": "tls_days",
+   "host": "www.acme.example", "min_days": 20},
+  {"name": "The number of healthy replicas at rest is the requested one.", "type": "resource_attr",
+   "resource": "app/app.service", "path": "desired_count", "op": "eq", "value": 2}
+]}
