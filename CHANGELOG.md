@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+- Prosa now names its category **Infrastructure as Prompt** (it was "Infrastructure as Intent").
+
 ## [0.2.0] — 2026-10-20
 
 ### Added

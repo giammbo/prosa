@@ -1,6 +1,6 @@
 # Prosa
 
-**Infrastructure written in prose.** A folder of prompts is the desired state of your cloud and your on-premises estate; an engine reconciles it continuously against the provider APIs, without generating code. Terraform/OpenTofu providers are the drivers; Claude (or any OpenAI-compatible model) plans, and every change goes through a provider-computed plan, policy and your approval.
+**Infrastructure as Prompt.** Infrastructure as Code made the code the source of truth; Infrastructure as Prompt makes the prompt the source of truth, with no code in between. A folder of prompts is the desired state of your cloud and your on-premises estate; an engine reconciles it continuously against the provider APIs. Terraform/OpenTofu providers are the drivers; Claude (or any OpenAI-compatible model) plans, and every change goes through a provider-computed plan, policy and your approval.
 
 [![CI](https://github.com/giammbo/prosa/actions/workflows/ci.yml/badge.svg)](https://github.com/giammbo/prosa/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/giammbo/prosa)](https://github.com/giammbo/prosa/releases)
