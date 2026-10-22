@@ -53,9 +53,15 @@ type versioned interface {
 
 // AWSProviderConfig builds the hashicorp/aws provider configuration of s:
 // the region, nothing else about the identity (no allowed_account_ids,
-// assume_role, profile or default_tags). With an endpoint, the AWS-side
-// checks are skipped and, unless AWS_ACCESS_KEY_ID is set, the credentials
-// are "test". The endpoint itself reaches the provider process as
+// assume_role, profile or default_tags). With an endpoint, the checks that
+// need real AWS are skipped (credentials validation, region validation, the
+// EC2 metadata API) and, unless AWS_ACCESS_KEY_ID is set, the credentials
+// are "test". The account of the credentials in use is still requested, as
+// on real AWS (STS GetCallerIdentity, which an emulator such as Moto
+// serves); Prosa never chooses an account. Without it the provider cannot
+// tell its own account's resources from another's and reads back, for
+// example, a security group rule's referenced group as "<account>/<group>",
+// a drift at every plan. The endpoint itself reaches the provider process as
 // AWS_ENDPOINT_URL (AWSProviderEnv), which the AWS SDK applies to every
 // service. It is endpoint configuration, not a special path for one
 // emulator. b is the provider's configuration schema.
@@ -65,7 +71,7 @@ func AWSProviderConfig(b *provider.Block, s AWSSettings) (map[string]any, error)
 		return m, nil
 	}
 	m["skip_credentials_validation"] = true
-	m["skip_requesting_account_id"] = true
+	m["skip_requesting_account_id"] = false
 	m["skip_region_validation"] = true
 	if os.Getenv("AWS_ACCESS_KEY_ID") == "" {
 		m["access_key"] = "test"

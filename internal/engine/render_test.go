@@ -48,7 +48,9 @@ func TestRenderCreate(t *testing.T) {
 		Before: cty.NullVal(fake.schema.Resources["test_db"].Block.ImpliedType()),
 		After:  dbObj(cty.UnknownVal(cty.String), "db", 20, strMap("env", "staging", "prosa/intent", "app")),
 	}}}
-	checkRender(t, renderPlan(p), `Prosa will perform the following actions:
+	checkRender(t, renderPlan(p), `rules: not checked (no model)
+
+Prosa will perform the following actions:
 
   # app/db will be created
   + resource "test_db" "db" {
@@ -85,7 +87,9 @@ func TestRenderCreateNestedBlocksAndLists(t *testing.T) {
 		{Intent: "web", Key: "lb", Type: "test_lb", Action: Create, After: lb},
 		{Intent: "web", Key: "l", Type: "test_list", Action: Create, After: list},
 	}}
-	checkRender(t, renderPlan(p), `Prosa will perform the following actions:
+	checkRender(t, renderPlan(p), `rules: not checked (no model)
+
+Prosa will perform the following actions:
 
   # web/lb will be created
   + resource "test_lb" "lb" {
@@ -136,7 +140,9 @@ func TestRenderUpdateWithDriftAndGate(t *testing.T) {
 		Before: dbObj(cty.StringVal("test_db-1"), "db", 30, tags),
 		After:  dbObj(cty.StringVal("test_db-1"), "db", 20, tags),
 	}}}
-	checkRender(t, renderPlan(p), `Prosa will perform the following actions:
+	checkRender(t, renderPlan(p), `rules: not checked (no model)
+
+Prosa will perform the following actions:
 
   # app/db will be updated in-place
   # (needs approval)
@@ -169,7 +175,9 @@ func TestRenderUpdateMapsListsAndNull(t *testing.T) {
 		{Intent: "app", Key: "db", Type: "test_db", Action: Update,
 			Before: dbObj(cty.StringVal("test_db-1"), "db", 10, tagsBefore), After: dbObj(cty.StringVal("test_db-1"), "db", 10, tagsAfter)},
 	}}
-	checkRender(t, renderPlan(p), `Prosa will perform the following actions:
+	checkRender(t, renderPlan(p), `rules: not checked (no model)
+
+Prosa will perform the following actions:
 
   # app/l will be updated in-place
   ~ resource "test_list" "l" {
@@ -211,7 +219,9 @@ func TestRenderReplace(t *testing.T) {
 		RequiresReplace: []string{"name"},
 		Before:          net(cty.StringVal("test_net-1"), "net"), After: net(cty.UnknownVal(cty.String), "net2"),
 	}}}
-	checkRender(t, renderPlan(p), `Prosa will perform the following actions:
+	checkRender(t, renderPlan(p), `rules: not checked (no model)
+
+Prosa will perform the following actions:
 
   # app/net must be replaced
   # (needs approval: destroy)
@@ -234,7 +244,9 @@ func TestRenderDestroy(t *testing.T) {
 			Before: before, After: cty.NullVal(before.Type())},
 		{Intent: "old", Key: "net", Type: "test_net", Action: Delete, Gate: GateAuto, Drifted: true, Before: gone, After: gone},
 	}}
-	checkRender(t, renderPlan(p), `Prosa will perform the following actions:
+	checkRender(t, renderPlan(p), `rules: not checked (no model)
+
+Prosa will perform the following actions:
 
   # old/db will be destroyed
   # (needs approval: destroy)
@@ -270,7 +282,9 @@ func TestRenderNestedBlockUpdateMasksSensitive(t *testing.T) {
 	if strings.Contains(out, "s3cret") {
 		t.Fatalf("render leaks a nested sensitive value: %q", out)
 	}
-	checkRender(t, out, `Prosa will perform the following actions:
+	checkRender(t, out, `rules: not checked (no model)
+
+Prosa will perform the following actions:
 
   # app/app will be updated in-place
   ~ resource "test_app" "app" {
@@ -317,7 +331,9 @@ func TestRenderNestedBlockHiddenAndAdded(t *testing.T) {
 	p := &Plan{schema: fake.schema, Changes: []Change{
 		{Intent: "web", Key: "lb", Type: "test_lb", Action: Update, Before: lb("a", path("/a")), After: lb("b", path("/a"), path("/b"))},
 	}}
-	checkRender(t, renderPlan(p), `Prosa will perform the following actions:
+	checkRender(t, renderPlan(p), `rules: not checked (no model)
+
+Prosa will perform the following actions:
 
   # web/lb will be updated in-place
   ~ resource "test_lb" "lb" {
@@ -342,7 +358,9 @@ func TestRenderGatesSummaryAndSections(t *testing.T) {
 		{Intent: "cron", Key: "job", Type: "test_net", Action: Create, Gate: GateAuto},
 		{Intent: "same", Key: "x", Type: "test_net", Action: NoOp},
 	}}
-	checkRender(t, renderPlan(p), `Prosa will perform the following actions:
+	checkRender(t, renderPlan(p), `rules: not checked (no model)
+
+Prosa will perform the following actions:
 
   # old/net will be destroyed
   # (needs approval: destroy)
@@ -371,11 +389,13 @@ advise: to apply base, set "autonomy: approve" in base.md and run: prosa plan in
 }
 
 func TestRenderNoChangesAndBlocked(t *testing.T) {
-	checkRender(t, renderPlan(&Plan{}), "No changes. Your infrastructure matches the intents.\n")
+	checkRender(t, renderPlan(&Plan{}), "rules: not checked (no model)\n\nNo changes. Your infrastructure matches the intents.\n")
 	checkRender(t, renderPlan(&Plan{Blocked: "state digest mismatch"}), "Blocked: state digest mismatch\n")
-	checkRender(t, renderPlan(&Plan{Blockers: []string{"app: a", "app: b"}}), "Blocked:\n  app: a\n  app: b\n")
+	checkRender(t, renderPlan(&Plan{Blockers: []string{"app: a", "app: b"}}), "rules: not checked (no model)\n\nBlocked:\n  app: a\n  app: b\n")
 	p := &Plan{Blockers: []string{"app: a"}, Changes: []Change{{Intent: "web", Key: "net", Type: "test_net", Action: Create}}}
-	checkRender(t, renderPlan(p), `Blocked:
+	checkRender(t, renderPlan(p), `rules: not checked (no model)
+
+Blocked:
   app: a
 
 Prosa will perform the following actions:
@@ -405,7 +425,8 @@ func TestRenderColor(t *testing.T) {
 	const (
 		b, d, r, g, y, z = "\x1b[1m", "\x1b[2m", "\x1b[31m", "\x1b[32m", "\x1b[33m", "\x1b[0m"
 	)
-	want := "Prosa will perform the following actions:\n\n" +
+	want := "rules: not checked (no model)\n\n" +
+		"Prosa will perform the following actions:\n\n" +
 		"  " + b + "# app/a will be created" + z + "\n" +
 		"  " + g + "+" + z + " " + b + `resource "test_net" "a" {` + z + "\n" +
 		"      " + g + "+" + z + " id   = " + d + "(known after apply)" + z + "\n" +
@@ -472,7 +493,9 @@ func TestRenderFailsClosedWithoutSchema(t *testing.T) {
 		{Intent: "app", Key: "db", Type: "test_db", Action: Update, Before: before, After: after},
 		{Intent: "app", Key: "old", Type: "test_db", Action: Delete, Before: before, After: cty.NullVal(before.Type())},
 	}
-	want := `Prosa will perform the following actions:
+	want := `rules: not checked (no model)
+
+Prosa will perform the following actions:
 
   # app/new will be created
   + resource "test_db" "new" {

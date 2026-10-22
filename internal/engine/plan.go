@@ -20,6 +20,7 @@ import (
 	"github.com/giammbo/prosa/internal/lock"
 	"github.com/giammbo/prosa/internal/provider"
 	"github.com/giammbo/prosa/internal/state"
+	"github.com/giammbo/prosa/rules"
 )
 
 // Engine reconciles the intents in Dir against the providers.
@@ -77,6 +78,17 @@ type Engine struct {
 	// alike (the planner cache then gives both the same key); without it,
 	// with the root state's text. Empty: no base texts.
 	BaseTextDir string
+	// Rules are the rules in force for the run (ADR-034). They are checked
+	// only with a Reviewer: the planner sees them under the schemas, and
+	// each desired state that passes validation is reviewed against them;
+	// a violation is a validation problem. nil Reviewer: the plan says the
+	// rules were not checked.
+	Rules    rules.Set
+	Reviewer Reviewer
+	// Replan names the intents to plan again, with the violations of their
+	// locked state, even when a fix would replace or delete a resource
+	// (--replan).
+	Replan []string
 }
 
 // Action is what a change does to one resource.
@@ -113,6 +125,9 @@ type Change struct {
 	// approved", "depends on <intent>/<key>"). A no-op has no gate.
 	Gate       Gate
 	GateReason string
+	// Rule lists, comma-separated, the rules a fix of a frozen intent's
+	// locked state answers (ADR-034); "" for any other change.
+	Rule string
 
 	// What Apply needs, as computed by Plan.
 	provider, providerVersion string // lock name and version of the provider
@@ -161,11 +176,17 @@ type Plan struct {
 	CheckResults []CheckResult
 	// Written reports that Apply wrote the lock or a state.
 	Written bool
+	// Rules is what the plan says about the rules (ADR-034); Warnings are
+	// the plan's warnings, as rendered after it.
+	Rules    RulesSummary
+	Warnings []string
 
 	// What Apply needs, as loaded by Plan.
 	dir       string                        // the intents directory, as given
 	region    string                        // the AWS region (Engine.Region)
 	env       *intent.Env                   // Engine.Env
+	rules     rules.Set                     // Engine.Rules
+	reviewer  Reviewer                      // Engine.Reviewer
 	lock      *lock.Lock                    // the lock as loaded
 	lockBytes []byte                        // its bytes on disk, nil when there was no file
 	intents   []intent.Intent               // intents in Dir, by name
@@ -182,6 +203,24 @@ type Plan struct {
 	// keep lists the intents planDesired takes from the lock as they are,
 	// up to date or not: the bases an environment does not need (planBases).
 	keep map[string]bool
+	// The rules and the intents already applied (rules_frozen.go):
+	// reviewLocked says that the intents whose lock is reused are reviewed
+	// (not on the base's sub-plan); replan holds Engine.Replan; reused the
+	// intents whose desired state is their lock's as it is; reviewed those
+	// whose desired state the reviewer passed in this run; ruleFix, by
+	// frozen intent planned again for the rules, the IDs its locked state
+	// breaks, and violations the violations; rulesHashes the rules_hash
+	// Apply writes, by intent of Dir.
+	reviewLocked bool
+	replan       map[string]bool
+	reused       map[string]bool
+	reviewed     map[string]bool
+	ruleFix      map[string][]string
+	violations   map[string][]Violation
+	rulesHashes  map[string]string
+	// envFile is the environment file as the hints name it
+	// (Engine.envFileArg); "" without an environment.
+	envFile string
 	// In an environment derived from the base (ADR-030): the base lock as
 	// loaded, with the bases this plan planned, and its bytes on disk (nil
 	// when there was no file), the intents whose planned base Apply writes
@@ -276,6 +315,9 @@ func (e *Engine) plan(ctx context.Context) (*Plan, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := checkReplan(e.Replan, intents); err != nil {
+		return nil, err
+	}
 	lk, lockBytes, err := lock.Read(e.LockPath)
 	if err != nil {
 		return nil, err
@@ -284,6 +326,8 @@ func (e *Engine) plan(ctx context.Context) (*Plan, error) {
 		dir:          e.Dir,
 		region:       e.region(),
 		env:          e.Env,
+		rules:        e.Rules,
+		reviewer:     e.Reviewer,
 		lock:         lk,
 		lockBytes:    lockBytes,
 		intents:      intents,
@@ -294,7 +338,19 @@ func (e *Engine) plan(ctx context.Context) (*Plan, error) {
 		asked:        map[string]bool{},
 		resumed:      map[string]bool{},
 		providerName: awsProvider,
+		reviewLocked: true,
+		replan:       map[string]bool{},
+		reused:       map[string]bool{},
+		reviewed:     map[string]bool{},
+		ruleFix:      map[string][]string{},
+		violations:   map[string][]Violation{},
+		rulesHashes:  map[string]string{},
+		envFile:      e.envFileArg(),
 	}
+	for _, name := range e.Replan {
+		p.replan[name] = true
+	}
+	p.summarizeRules()
 	if e.baseMode() {
 		if err := e.loadBase(p); err != nil {
 			return nil, err
@@ -357,6 +413,7 @@ func (e *Engine) plan(ctx context.Context) (*Plan, error) {
 		if probs := p.allCheckProblems(); len(probs) > 0 {
 			return nil, newValidationError(probs)
 		}
+		p.settleRules()
 		return p, nil
 	}
 	if err := e.startProvider(ctx, p); err != nil {
@@ -384,9 +441,39 @@ func (e *Engine) plan(ctx context.Context) (*Plan, error) {
 		}
 	}
 
-	// Desired resources, in dependency order. A reference takes the planned
-	// state of a resource that changes in this run, the refreshed one
-	// otherwise.
+	changes, err := e.planChanges(ctx, p, order, cur, lockKeys)
+	if err != nil {
+		return nil, err
+	}
+	if p.dropUnsafeFixes(changes) {
+		// The intents whose fix was dropped are back to their lock: their
+		// changes, and those of the resources that refer to them, change.
+		order, refProbs, badRefs = p.desiredOrder(p.desired, lockKeys)
+		if err := p.validate(ctx, refProbs, badRefs); err != nil {
+			return nil, err
+		}
+		if changes, err = e.planChanges(ctx, p, order, cur, lockKeys); err != nil {
+			return nil, err
+		}
+	}
+	p.markFixes(changes)
+	p.settleRules()
+	p.Changes = slices.DeleteFunc(changes, func(c Change) bool { return blocked[c.Intent] })
+	p.setGates(newPolicy(p.region))
+	if p.hasRefused() {
+		if err := p.prune(); err != nil {
+			return nil, err
+		}
+	}
+	return p, nil
+}
+
+// planChanges returns the changes of the plan, cur being the refreshed
+// state of every stored resource: the deletes of the stored resources no
+// longer desired, then the change of each desired resource in order, where
+// a reference takes the planned state of a resource that changes in this
+// run, the refreshed one otherwise.
+func (e *Engine) planChanges(ctx context.Context, p *Plan, order []string, cur map[string]*current, lockKeys map[string][]string) ([]Change, error) {
 	type desiredRes struct {
 		intent string
 		r      DesiredResource
@@ -423,20 +510,11 @@ func (e *Engine) plan(ctx context.Context) (*Plan, error) {
 		}
 		others = append(others, c)
 	}
-
-	// Stored resources that are no longer desired.
 	deletes, err := p.planDeletes(ctx, cur, lockKeys)
 	if err != nil {
 		return nil, err
 	}
-	p.Changes = slices.DeleteFunc(append(deletes, others...), func(c Change) bool { return blocked[c.Intent] })
-	p.setGates(newPolicy(p.region))
-	if p.hasRefused() {
-		if err := p.prune(); err != nil {
-			return nil, err
-		}
-	}
-	return p, nil
+	return append(deletes, others...), nil
 }
 
 // desiredStates sets the desired resources and checks of every intent in
@@ -457,11 +535,12 @@ func (e *Engine) desiredStates(ctx context.Context, p *Plan, lockKeys map[string
 // is started before the planner is asked. It returns the blocked intents,
 // whose desired resources and checks are the lock's (reference targets only:
 // they get no changes). A planner's answer that is only a patch is applied
-// to the lock's state of the intent (PlanInput.resolve).
+// to the lock's state of the intent (PlanInput.resolve). An unchanged intent
+// whose locked state breaks a rule is planned too, as a fix (reviewFrozen).
 func (e *Engine) planDesired(ctx context.Context, p *Plan, lockKeys map[string][]string) (map[string]bool, error) {
 	view := map[string][]DesiredResource{}
 	checkView := map[string][]lock.Check{}
-	var toPlan []intent.Intent
+	var toPlan, reused []intent.Intent
 	for _, it := range p.intents {
 		li := p.lock.Intents[it.Name]
 		if li != nil {
@@ -469,10 +548,17 @@ func (e *Engine) planDesired(ctx context.Context, p *Plan, lockKeys map[string][
 		}
 		if p.upToDate(it, li) || p.keep[it.Name] {
 			p.desired[it.Name], p.checks[it.Name] = view[it.Name], checkView[it.Name]
+			reused = append(reused, it)
 		} else {
 			toPlan = append(toPlan, it)
 		}
 	}
+	rewritten := len(toPlan) > 0 // the fixes rewrite the lock only if kept (markFixes)
+	fixes, err := p.reviewFrozen(ctx, reused, view)
+	if err != nil {
+		return nil, err
+	}
+	toPlan = append(toPlan, fixes...)
 	blocked := map[string]bool{}
 	if len(toPlan) > 0 {
 		if e.Planner == nil {
@@ -481,10 +567,11 @@ func (e *Engine) planDesired(ctx context.Context, p *Plan, lockKeys map[string][
 		if err := e.startProvider(ctx, p); err != nil {
 			return nil, err
 		}
-		p.LockDirty = true
+		p.LockDirty = p.LockDirty || rewritten
 	}
 	for _, it := range planningOrder(p.intents, toPlan) {
 		in := p.planInput(it, view, checkView, lockKeys)
+		in.Problems = p.fixProblems(it.Name)
 		var d Desired
 		resumed := false
 		var err error

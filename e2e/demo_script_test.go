@@ -100,6 +100,7 @@ func wantMotoCleanIn(ctx context.Context, t *testing.T, region string) {
 		{"acm", "list-certificates", "--query", "CertificateSummaryList[].DomainName"},
 		{"secretsmanager", "list-secrets", "--query", "SecretList[].Name"},
 		{"sns", "list-topics", "--query", "Topics[].TopicArn"},
+		{"logs", "describe-log-groups", "--query", "logGroups[].logGroupName"},
 		{"iam", "list-roles", "--query", "Roles[?starts_with(RoleName, `staging`) || starts_with(RoleName, `prod`)].RoleName"},
 	} {
 		got, err := awsOutIn(ctx, t, region, append(q, "--output", "json")...)

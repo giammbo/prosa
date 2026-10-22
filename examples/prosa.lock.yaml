@@ -12,6 +12,7 @@ provider_versions:
 intents:
   database:
     intent_hash: sha256:3f9c...      # hash of database.md
+    rules_hash: sha256:5e27...       # the rules that apply to its resource types, when the reviewer passed this state (ADR-034)
     recipe: null
     reconciled_at: 2026-10-20T09:10:00Z
     state:
@@ -52,6 +53,17 @@ intents:
           name_prefix: main-db-
           description: Postgres, only from the app's private network
           vpc_id: "${app/net.vpc.id}"
+          tags: { team: platform }
+      - key: db.ingress_from_app
+        provider: hashicorp/aws
+        type: aws_vpc_security_group_ingress_rule
+        id: sgr-0e5f
+        chosen:
+          security_group_id: "${database/db.security_group.id}"
+          referenced_security_group_id: "${app/app.security_group.id}"   # AWS-NET-001: the app's security group, never a CIDR
+          ip_protocol: tcp
+          from_port: 5432
+          to_port: 5432
           tags: { team: platform }
     checks:
       - name: "The database accepts connections from the private subnet and rejects them from the internet."

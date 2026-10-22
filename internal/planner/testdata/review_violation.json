@@ -1,0 +1,43 @@
+{
+  "prompt_version": "r1",
+  "prompt_sha256": "7217354285532ee82e6e7f43fb1eb811fceea218b2d27c19a38fbcb0a68f0f36",
+  "turns": [
+    {
+      "id": "msg_01Rv7kQ2nT4pW6xY8zA1bC3d",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-haiku-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqQBCkYICBgCKkAr1v9QeX1pYb7rL2mN4sT6uW8yA0cE2gI4kM6oQ8sU0wY2aC4eG6iK8mO0qS2uW4yA6cE8gI0kM2oQ4sU6wY8aEgxRv7kQ2nT4pW6xY8zGgy8b7cP4kXmT2qL9vR1GAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Rv8lR3oU5qX7yZ9aB2cD4e",
+          "name": "submit_review",
+          "input": {
+            "violations": [
+              {
+                "rule": "AWS-NET-001",
+                "key": "db.sg_ingress",
+                "reason": "cidr_ipv4 is 0.0.0.0/0 on port 5432, while the exception allows only the office range 203.0.113.0/24; set cidr_ipv4 to 203.0.113.0/24."
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 1180,
+        "output_tokens": 164,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

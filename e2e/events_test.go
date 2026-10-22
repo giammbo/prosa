@@ -44,6 +44,36 @@ func (r *eventRecorder) Plan(ctx context.Context, in engine.PlanInput) (engine.D
 	return d, err
 }
 
+// reviewer wraps inner so that each review is recorded as rules.review in
+// the log of the current run, as cmd/prosa's eventReviewer does: the IDs of
+// the rules given, the violations found as "<ID> <key>".
+func (r *eventRecorder) reviewer(inner engine.Reviewer) engine.Reviewer {
+	return reviewRecorder{r, inner}
+}
+
+type reviewRecorder struct {
+	r     *eventRecorder
+	inner engine.Reviewer
+}
+
+func (rr reviewRecorder) Review(ctx context.Context, in engine.ReviewInput) ([]engine.Violation, error) {
+	vs, err := rr.inner.Review(ctx, in)
+	if rep, ok := rr.inner.(planner.ResultReporter); ok && rr.r.log != nil {
+		if res := rep.LastResult(); res.Intent != "" {
+			ids := make([]string, len(in.Rules))
+			for i, rule := range in.Rules {
+				ids[i] = rule.ID
+			}
+			found := make([]string, len(vs))
+			for i, v := range vs {
+				found[i] = v.Rule + " " + v.Key
+			}
+			rr.r.log.RulesReview(res, ids, found)
+		}
+	}
+	return vs, err
+}
+
 // begin starts a run named command and returns the function that ends it
 // with the result of err (as cmd/prosa maps it).
 func (r *eventRecorder) begin(command string) (end func(error)) {

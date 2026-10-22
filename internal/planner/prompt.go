@@ -13,7 +13,7 @@ import (
 // PromptVersion names the system prompt, the tools and the user message
 // format: change it with any of them, since it is part of the planner
 // cache's key.
-const PromptVersion = "m7-2"
+const PromptVersion = "m8-3"
 
 // systemPrompt is the stable system prompt: no per-request data, so that it
 // and the tools are read from the prompt cache.
@@ -47,7 +47,8 @@ Read the schema of every resource type you use before submitting it. Never inven
 - The operations are applied in order to the config as the request shows it: {"op": "set", "key", "path", "value"} sets an attribute or block (the path is dotted, a list element by its index: "ingress.0.from_port"; missing objects along the path are created, a list index must exist; a list or set block is replaced whole, so write all of its items); {"op": "unset", "key", "path"} removes it; {"op": "add", "key", "type", "config", "depends_on"} adds a resource; {"op": "remove", "key"} removes one; {"op": "depends_on", "key", "value": [nodes]} replaces its depends_on; {"op": "checks", "value": [checks]} replaces all the checks, in the format of submit_desired_state, and only when the "Checks" section (or "Verifiche", its older name) changed or the environment changes the checks.
 - Use only keys and paths the shown state has (or add creates); an operation on something that does not exist comes back as an error. An empty list of changes is valid: nothing needs to change.
 - Config values obey the same rules as in a complete desired state: a sensitive or write-only attribute is never set to a literal, only to a whole-value reference.
-- <old_patch> is the patch recorded earlier for this environment, on a previous base; <patch_problems> says why it does not apply to the current base. Write a new patch that keeps what the environment still asks for.
+- <old_patch> is the patch recorded earlier for this environment, on a previous base; <patch_problems> says why it does not apply to the current base, or the rule violations to fix. Write a new patch that keeps what the environment still asks for.
+- <problems> lists what is wrong with the previous resources, such as rule violations; fix each one.
 - Blockers work as with submit_desired_state: pass blockers, with an empty list of changes.
 
 # Names
@@ -55,6 +56,12 @@ Read the schema of every resource type you use before submitting it. Never inven
 - If the intent states a name, use it.
 - Otherwise do not set optional names (the provider generates unique ones), or give the attribute a readable prefix, with name_prefix or identifier_prefix as the schema has it ("main-db-"), so that the same state is valid in every environment.
 - <required_names> lists the attributes ("<key>.<attribute>") of the base whose schema requires a name. Give each one a set operation with a name that contains the name of the environment ("staging-orders"), unless the text states the name.
+
+# Rules
+
+- The schema of a resource type can end with rules (best practices, by ID): they are binding for every resource of that type.
+- After the engine's own validation, a reviewer checks the desired state against them; its findings come back as problems, like the others: fix every one and submit again.
+- An intent may except a rule by naming its ID in its prose: that rule then does not hold for that intent, within what the exception says and no further.
 
 # The config
 
@@ -124,6 +131,9 @@ func userMessage(in engine.PlanInput) (string, error) {
 			b.WriteString("<previous_intent>none: this is a new intent</previous_intent>\n\n")
 		} else {
 			fmt.Fprintf(&b, "<previous_intent>\n%s\n</previous_intent>\n\n", strings.TrimSpace(in.PreviousBody))
+		}
+		if len(in.Problems) > 0 {
+			fmt.Fprintf(&b, "<problems>\n%s\n</problems>\n\n", strings.Join(in.Problems, "\n"))
 		}
 		if len(in.Previous) == 0 {
 			b.WriteString("<previous_resources>none</previous_resources>\n\n")

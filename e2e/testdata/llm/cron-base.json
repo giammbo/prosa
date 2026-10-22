@@ -1,6 +1,6 @@
 {
-  "prompt_version": "m7-2",
-  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "prompt_version": "m8-3",
+  "prompt_sha256": "0c337d1f1609a45de84d3afea0d166d2fbacaf30a2c69c6a71bc470a4c367500",
   "turns": [
     {
       "id": "msg_01CoeaVPEEgBA41kJzPtDBDt",
@@ -36,6 +36,14 @@
           "input": {
             "query": "iam role policy"
           }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01oifUKZPJZtrLdc8omnmxHi",
+          "name": "search_resource_types",
+          "input": {
+            "query": "cloudwatch log group"
+          }
         }
       ],
       "stop_reason": "tool_use",
@@ -43,7 +51,7 @@
       "stop_details": null,
       "usage": {
         "input_tokens": 900,
-        "output_tokens": 407,
+        "output_tokens": 450,
         "cache_creation_input_tokens": 2360,
         "cache_read_input_tokens": 0,
         "service_tier": "standard"
@@ -99,16 +107,24 @@
           "input": {
             "type": "aws_iam_role_policy"
           }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_014aKtmbTsP1G2utVHuFFi89",
+          "name": "get_resource_schema",
+          "input": {
+            "type": "aws_cloudwatch_log_group"
+          }
         }
       ],
       "stop_reason": "tool_use",
       "stop_sequence": null,
       "stop_details": null,
       "usage": {
-        "input_tokens": 210,
-        "output_tokens": 486,
+        "input_tokens": 280,
+        "output_tokens": 529,
         "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 3667,
+        "cache_read_input_tokens": 3710,
         "service_tier": "standard"
       }
     },
@@ -136,10 +152,10 @@
       "stop_sequence": null,
       "stop_details": null,
       "usage": {
-        "input_tokens": 7000,
+        "input_tokens": 8400,
         "output_tokens": 327,
         "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 4363,
+        "cache_read_input_tokens": 4519,
         "service_tier": "standard"
       }
     },
@@ -165,6 +181,14 @@
                 "type": "aws_ecs_cluster",
                 "config": {
                   "name": "cron"
+                }
+              },
+              {
+                "key": "job.logs",
+                "type": "aws_cloudwatch_log_group",
+                "config": {
+                  "name": "/ecs/clearsessions",
+                  "retention_in_days": 30
                 }
               },
               {
@@ -206,6 +230,47 @@
                 }
               },
               {
+                "key": "job.execution_role_logs",
+                "type": "aws_iam_role_policy",
+                "config": {
+                  "name": "write-logs",
+                  "policy": {
+                    "Statement": [
+                      {
+                        "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                        ],
+                        "Effect": "Allow",
+                        "Resource": "${cron/job.logs.arn}:*"
+                      }
+                    ],
+                    "Version": "2012-10-17"
+                  },
+                  "role": "${cron/job.execution_role.name}"
+                }
+              },
+              {
+                "key": "job.task_role",
+                "type": "aws_iam_role",
+                "config": {
+                  "assume_role_policy": {
+                    "Statement": [
+                      {
+                        "Action": "sts:AssumeRole",
+                        "Effect": "Allow",
+                        "Principal": {
+                          "Service": "ecs-tasks.amazonaws.com"
+                        }
+                      }
+                    ],
+                    "Version": "2012-10-17"
+                  },
+                  "description": "Role of the clearsessions container, for the application's own permissions",
+                  "name": "clearsessions-task"
+                }
+              },
+              {
                 "key": "job.task",
                 "type": "aws_ecs_task_definition",
                 "config": {
@@ -218,6 +283,14 @@
                       ],
                       "essential": true,
                       "image": "ghcr.io/acme/web:1.4.2",
+                      "logConfiguration": {
+                        "logDriver": "awslogs",
+                        "options": {
+                          "awslogs-group": "${cron/job.logs.name}",
+                          "awslogs-region": "eu-south-1",
+                          "awslogs-stream-prefix": "clearsessions"
+                        }
+                      },
                       "name": "clearsessions",
                       "secrets": [
                         {
@@ -234,7 +307,8 @@
                   "network_mode": "awsvpc",
                   "requires_compatibilities": [
                     "FARGATE"
-                  ]
+                  ],
+                  "task_role_arn": "${cron/job.task_role.arn}"
                 }
               },
               {
@@ -277,7 +351,10 @@
                       {
                         "Action": "iam:PassRole",
                         "Effect": "Allow",
-                        "Resource": "${cron/job.execution_role.arn}"
+                        "Resource": [
+                          "${cron/job.execution_role.arn}",
+                          "${cron/job.task_role.arn}"
+                        ]
                       }
                     ],
                     "Version": "2012-10-17"
@@ -418,9 +495,9 @@
       "stop_details": null,
       "usage": {
         "input_tokens": 1400,
-        "output_tokens": 1659,
+        "output_tokens": 1984,
         "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 11690,
+        "cache_read_input_tokens": 13246,
         "service_tier": "standard"
       }
     },
@@ -446,6 +523,14 @@
                 "type": "aws_ecs_cluster",
                 "config": {
                   "name": "cron"
+                }
+              },
+              {
+                "key": "job.logs",
+                "type": "aws_cloudwatch_log_group",
+                "config": {
+                  "name": "/ecs/clearsessions",
+                  "retention_in_days": 30
                 }
               },
               {
@@ -487,6 +572,47 @@
                 }
               },
               {
+                "key": "job.execution_role_logs",
+                "type": "aws_iam_role_policy",
+                "config": {
+                  "name": "write-logs",
+                  "policy": {
+                    "Statement": [
+                      {
+                        "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                        ],
+                        "Effect": "Allow",
+                        "Resource": "${cron/job.logs.arn}:*"
+                      }
+                    ],
+                    "Version": "2012-10-17"
+                  },
+                  "role": "${cron/job.execution_role.name}"
+                }
+              },
+              {
+                "key": "job.task_role",
+                "type": "aws_iam_role",
+                "config": {
+                  "assume_role_policy": {
+                    "Statement": [
+                      {
+                        "Action": "sts:AssumeRole",
+                        "Effect": "Allow",
+                        "Principal": {
+                          "Service": "ecs-tasks.amazonaws.com"
+                        }
+                      }
+                    ],
+                    "Version": "2012-10-17"
+                  },
+                  "description": "Role of the clearsessions container, for the application's own permissions",
+                  "name": "clearsessions-task"
+                }
+              },
+              {
                 "key": "job.task",
                 "type": "aws_ecs_task_definition",
                 "config": {
@@ -499,6 +625,14 @@
                       ],
                       "essential": true,
                       "image": "ghcr.io/acme/web:1.4.2",
+                      "logConfiguration": {
+                        "logDriver": "awslogs",
+                        "options": {
+                          "awslogs-group": "${cron/job.logs.name}",
+                          "awslogs-region": "eu-south-1",
+                          "awslogs-stream-prefix": "clearsessions"
+                        }
+                      },
                       "name": "clearsessions",
                       "secrets": [
                         {
@@ -515,7 +649,8 @@
                   "network_mode": "awsvpc",
                   "requires_compatibilities": [
                     "FARGATE"
-                  ]
+                  ],
+                  "task_role_arn": "${cron/job.task_role.arn}"
                 }
               },
               {
@@ -558,7 +693,10 @@
                       {
                         "Action": "iam:PassRole",
                         "Effect": "Allow",
-                        "Resource": "${cron/job.execution_role.arn}"
+                        "Resource": [
+                          "${cron/job.execution_role.arn}",
+                          "${cron/job.task_role.arn}"
+                        ]
                       }
                     ],
                     "Version": "2012-10-17"
@@ -699,9 +837,9 @@
       "stop_details": null,
       "usage": {
         "input_tokens": 120,
-        "output_tokens": 1659,
+        "output_tokens": 1984,
         "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 14749,
+        "cache_read_input_tokens": 16630,
         "service_tier": "standard"
       }
     }

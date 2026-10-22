@@ -31,6 +31,10 @@ type Lock struct {
 
 type Intent struct {
 	IntentHash string `yaml:"intent_hash"`
+	// RulesHash is the hash of the active rules that apply to the types of
+	// the resources (ADR-034) when the reviewer last checked this state; ""
+	// when it was not checked.
+	RulesHash string `yaml:"rules_hash,omitempty"`
 	// BaseHash and Patch are those of an environment lock (ADR-030): the
 	// intent_hash of the base this intent derives from, and the operations
 	// applied to it.

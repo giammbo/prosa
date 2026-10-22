@@ -76,6 +76,18 @@ type Replay struct {
 // was made with another prompt version, system prompt or tools than the
 // planner's current ones: it must then be recorded again.
 func LoadReplay(path string) (*Replay, error) {
+	return loadRecording(path, "planner", PromptVersion, PromptFingerprint())
+}
+
+// LoadReviewReplay is LoadReplay for a recording of the reviewer: its prompt
+// version and fingerprint are the reviewer's.
+func LoadReviewReplay(path string) (*Replay, error) {
+	return loadRecording(path, "reviewer", ReviewPromptVersion, ReviewPromptFingerprint())
+}
+
+// loadRecording reads a recording made for job (planner or reviewer) and
+// checks its header against the job's version and fingerprint.
+func loadRecording(path, job, version, fp string) (*Replay, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -84,10 +96,10 @@ func LoadReplay(path string) (*Replay, error) {
 	if err := json.Unmarshal(data, &rec); err != nil {
 		return nil, fmt.Errorf("%s: %w (a recording is an object with prompt_version, prompt_sha256 and turns)", path, err)
 	}
-	if rec.PromptVersion != PromptVersion {
-		return nil, fmt.Errorf("%s: recorded with prompt version %q, the planner has %q: record it again", path, rec.PromptVersion, PromptVersion)
+	if rec.PromptVersion != version {
+		return nil, fmt.Errorf("%s: recorded with prompt version %q, the %s has %q: record it again", path, rec.PromptVersion, job, version)
 	}
-	if fp := PromptFingerprint(); rec.PromptSHA256 != fp {
+	if rec.PromptSHA256 != fp {
 		return nil, fmt.Errorf("%s: recorded with another system prompt or other tools (sha256 %s, now %s): record it again", path, rec.PromptSHA256, fp)
 	}
 	return &Replay{Turns: rec.Turns, Fingerprint: rec.PromptSHA256}, nil
@@ -134,8 +146,9 @@ func (r *Replay) New(_ context.Context, params anthropic.BetaMessageNewParams) (
 }
 
 // Recorder wraps the real client and writes every response to Path, after
-// each call, in the format LoadReplay reads, with the prompt version and the
-// fingerprint of the request's system prompt and tools. It is meant to be used by hand,
+// each call, in the format LoadReplay reads (LoadReviewReplay, for a
+// conversation of the reviewer), with the prompt version and the fingerprint
+// of the request's system prompt and tools. It is meant to be used by hand,
 // with credentials, to record new test conversations.
 type Recorder struct {
 	Inner Messages
@@ -164,7 +177,11 @@ func (r *Recorder) New(ctx context.Context, params anthropic.BetaMessageNewParam
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.turns = append(r.turns, raw)
-	data, err := json.MarshalIndent(recording{PromptVersion: PromptVersion, PromptSHA256: fp, Turns: r.turns}, "", "  ")
+	version := PromptVersion
+	if fp == ReviewPromptFingerprint() {
+		version = ReviewPromptVersion
+	}
+	data, err := json.MarshalIndent(recording{PromptVersion: version, PromptSHA256: fp, Turns: r.turns}, "", "  ")
 	if err != nil {
 		return nil, err
 	}

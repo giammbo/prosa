@@ -220,8 +220,11 @@ type applier struct {
 	effects int
 }
 
-// involved returns, sorted, the intents Apply writes: those with operations
-// and those whose lock entry is stale (new, rewritten or removed intents).
+// involved returns, sorted, the intents Apply writes: those with operations,
+// those whose lock entry is stale (new, rewritten or removed intents, and the
+// frozen intents whose fix the plan keeps: their intent_hash is "" and their
+// Pending set until they complete) and those that only get a new rules_hash
+// (rulesStale).
 func (a *applier) involved(order []op) []string {
 	set := map[string]bool{}
 	for _, o := range order {
@@ -230,9 +233,12 @@ func (a *applier) involved(order []op) []string {
 	}
 	for _, it := range a.p.intents {
 		li := a.p.lock.Intents[it.Name]
-		if !a.p.upToDate(it, li) {
+		if !a.p.upToDate(it, li) || a.p.ruleFix[it.Name] != nil {
+			// A kept fix (ADR-034) rewrites the entry like a changed intent.
 			set[it.Name] = true
 			a.changed[it.Name], a.stale[it.Name] = li != nil, true
+		} else if a.p.rulesStale(it.Name) {
+			set[it.Name] = true
 		}
 	}
 	for _, name := range a.p.removed {

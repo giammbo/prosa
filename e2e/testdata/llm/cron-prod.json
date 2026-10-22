@@ -1,6 +1,6 @@
 {
-  "prompt_version": "m7-2",
-  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "prompt_version": "m8-3",
+  "prompt_sha256": "0c337d1f1609a45de84d3afea0d166d2fbacaf30a2c69c6a71bc470a4c367500",
   "turns": [
     {
       "id": "msg_011mooLjkKz6L1yPjnLwbGWA",
@@ -26,7 +26,7 @@
           "id": "toolu_01cEQEDHMmpL8Vd5xeWjJfGC",
           "name": "get_resource_schema",
           "input": {
-            "type": "aws_iam_role"
+            "type": "aws_cloudwatch_log_group"
           }
         },
         {
@@ -34,7 +34,7 @@
           "id": "toolu_01ZKdA5wGrcE14NruumVYG7m",
           "name": "get_resource_schema",
           "input": {
-            "type": "aws_ecs_task_definition"
+            "type": "aws_iam_role"
           }
         },
         {
@@ -42,7 +42,7 @@
           "id": "toolu_01TUAMuDb3fXwbcfo4b4XupV",
           "name": "get_resource_schema",
           "input": {
-            "type": "aws_scheduler_schedule"
+            "type": "aws_ecs_task_definition"
           }
         }
       ],
@@ -82,9 +82,52 @@
               },
               {
                 "op": "set",
+                "key": "job.logs",
+                "path": "name",
+                "value": "/ecs/prod-clearsessions"
+              },
+              {
+                "op": "set",
                 "key": "job.execution_role",
                 "path": "name",
                 "value": "prod-clearsessions-execution"
+              },
+              {
+                "op": "set",
+                "key": "job.task_role",
+                "path": "name",
+                "value": "prod-clearsessions-task"
+              },
+              {
+                "op": "set",
+                "key": "job.task",
+                "path": "container_definitions",
+                "value": [
+                  {
+                    "command": [
+                      "python",
+                      "manage.py",
+                      "clearsessions"
+                    ],
+                    "essential": true,
+                    "image": "ghcr.io/acme/web:1.4.2",
+                    "logConfiguration": {
+                      "logDriver": "awslogs",
+                      "options": {
+                        "awslogs-group": "${cron/job.logs.name}",
+                        "awslogs-region": "eu-west-1",
+                        "awslogs-stream-prefix": "clearsessions"
+                      }
+                    },
+                    "name": "clearsessions",
+                    "secrets": [
+                      {
+                        "name": "DATABASE_URL",
+                        "valueFrom": "${database/db.instance.master_user_secret.0.secret_arn}"
+                      }
+                    ]
+                  }
+                ]
               },
               {
                 "op": "set",
@@ -125,7 +168,7 @@
       "stop_details": null,
       "usage": {
         "input_tokens": 5600,
-        "output_tokens": 503,
+        "output_tokens": 712,
         "cache_creation_input_tokens": 0,
         "cache_read_input_tokens": 3704,
         "service_tier": "standard"

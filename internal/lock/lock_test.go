@@ -129,16 +129,19 @@ func TestLoadExampleLock(t *testing.T) {
 		t.Fatalf("intents = %d", len(l.Intents))
 	}
 	pg := l.Intents["database"]
-	if pg == nil || len(pg.Resources) != 3 {
+	if pg == nil || len(pg.Resources) != 4 {
 		t.Fatalf("database: %+v", pg)
 	}
 	for _, r := range pg.Resources {
 		if r.Key == "db.instance" && (r.Chosen["manage_master_user_password"] != true || r.Chosen["engine_version"] != "18.1") {
 			t.Errorf("chosen: %#v", r.Chosen)
 		}
+		if r.Key == "db.ingress_from_app" && r.Chosen["referenced_security_group_id"] != "${app/app.security_group.id}" {
+			t.Errorf("ingress chosen: %#v", r.Chosen)
+		}
 	}
-	if pg.BaseHash != "sha256:3f9c..." {
-		t.Errorf("base_hash = %q", pg.BaseHash)
+	if pg.BaseHash != "sha256:3f9c..." || pg.RulesHash != "sha256:5e27..." {
+		t.Errorf("base_hash = %q, rules_hash = %q", pg.BaseHash, pg.RulesHash)
 	}
 	wantPatch := []PatchOp{
 		{Op: "set", Key: "db.instance", Path: "engine_version", Value: "18.1"},
@@ -146,6 +149,7 @@ func TestLoadExampleLock(t *testing.T) {
 		{Op: "set", Key: "db.instance", Path: "tags.env", Value: "staging"},
 		{Op: "set", Key: "db.subnet_group", Path: "tags.env", Value: "staging"},
 		{Op: "set", Key: "db.security_group", Path: "tags.env", Value: "staging"},
+		{Op: "set", Key: "db.ingress_from_app", Path: "tags.env", Value: "staging"},
 	}
 	if !reflect.DeepEqual(pg.Patch, wantPatch) {
 		t.Errorf("patch =\n%#v\nwant\n%#v", pg.Patch, wantPatch)
@@ -369,5 +373,35 @@ func TestCheckNumber(t *testing.T) {
 		if err := CheckNumber(json.Number(bad)); err == nil {
 			t.Errorf("%q accepted", bad)
 		}
+	}
+}
+
+func TestLockRulesHashRoundTrip(t *testing.T) {
+	l := sample(0)
+	data, err := l.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(data), "rules_hash") {
+		t.Fatalf("empty rules_hash written:\n%s", data)
+	}
+	l.Intents["p"].RulesHash = "sha256:rules"
+	data, err = l.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "\n    rules_hash: sha256:rules\n") {
+		t.Fatalf("rules_hash missing:\n%s", data)
+	}
+	path := filepath.Join(t.TempDir(), "l.yaml")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	back, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := back.Intents["p"].RulesHash; got != "sha256:rules" {
+		t.Fatalf("rules_hash read back = %q", got)
 	}
 }

@@ -54,9 +54,13 @@ func (p *Plan) upToDate(it intent.Intent, li *lock.Intent) bool {
 // resumed; with the environment's part unchanged the saved patch, when it
 // sets every required name of the new base, is applied again to it and
 // validated; with no environment's part and no
-// required name the state is the base, with an empty patch. Otherwise the
+// required name the state is the base, with an empty patch (with a
+// reviewer, once the base passes the review as the environment's state).
+// Otherwise the
 // planner is asked for a patch (Mode "patch"), with the old patch and, when
-// it no longer applies, the problems.
+// it no longer applies, the problems. An up-to-date intent whose locked
+// state breaks a rule is decided too, as a fix (reviewFrozen): a new patch
+// asked with the violations as the problems.
 func (e *Engine) envDesiredStates(ctx context.Context, p *Plan, lockKeys map[string][]string) (map[string]bool, error) {
 	blocked, err := e.planBases(ctx, p)
 	if err != nil {
@@ -64,7 +68,7 @@ func (e *Engine) envDesiredStates(ctx context.Context, p *Plan, lockKeys map[str
 	}
 	view := map[string][]DesiredResource{}
 	checkView := map[string][]lock.Check{}
-	var toDecide []intent.Intent
+	var toDecide, reused []intent.Intent
 	for _, it := range p.intents {
 		p.baseHashes[it.Name] = it.Hash
 		li := p.lock.Intents[it.Name]
@@ -74,15 +78,22 @@ func (e *Engine) envDesiredStates(ctx context.Context, p *Plan, lockKeys map[str
 		if !blocked[it.Name] && p.upToDate(it, li) {
 			p.desired[it.Name], p.checks[it.Name] = view[it.Name], checkView[it.Name]
 			p.patches[it.Name] = li.Patch
+			reused = append(reused, it)
 		} else {
 			toDecide = append(toDecide, it)
 		}
 	}
+	rewritten := len(toDecide) > 0 // the fixes rewrite the lock only if kept (markFixes)
+	fixes, err := p.reviewFrozen(ctx, reused, view)
+	if err != nil {
+		return nil, err
+	}
+	toDecide = append(toDecide, fixes...)
 	if len(toDecide) > 0 {
 		if err := e.startProvider(ctx, p); err != nil {
 			return nil, err
 		}
-		p.LockDirty = true
+		p.LockDirty = p.LockDirty || rewritten
 	}
 	for _, it := range planningOrder(p.intents, toDecide) {
 		if blocked[it.Name] {
@@ -138,7 +149,7 @@ func (e *Engine) planBases(ctx context.Context, p *Plan) (map[string]bool, error
 		}
 	}
 	bp := &Plan{
-		dir: p.dir, region: p.region, lock: p.base, lockBytes: p.baseBytes, intents: p.intents,
+		dir: p.dir, region: p.region, rules: p.rules, reviewer: p.reviewer, lock: p.base, lockBytes: p.baseBytes, intents: p.intents,
 		desired: map[string][]DesiredResource{}, checks: map[string][]lock.Check{},
 		states: map[string]*state.IntentState{}, digests: map[string]string{},
 		asked: map[string]bool{}, resumed: map[string]bool{},
@@ -171,6 +182,7 @@ func (e *Engine) planBases(ctx context.Context, p *Plan) (map[string]bool, error
 		return nil, fmt.Errorf("base: %w", err)
 	}
 	p.Blockers = append(p.Blockers, bp.Blockers...)
+	p.mergeRules(bp)
 	for name := range bp.asked {
 		p.asked[name] = true
 	}
@@ -266,6 +278,10 @@ func (e *Engine) deriveEnv(ctx context.Context, p *Plan, it intent.Intent, in Pl
 		in.OldPatch = el.Patch
 	}
 	switch {
+	case p.ruleFix[it.Name] != nil:
+		// A fix of the environment's state for the rules: a new patch, with
+		// the violations of the locked one as the problems.
+		in.Problems = p.fixProblems(it.Name)
 	case el != nil && el.BaseHash != "" && el.IntentHash == IntentHash(intent.Intent{Name: it.Name, Hash: el.BaseHash}, p.env):
 		// The environment's part is unchanged, the base is not: the saved
 		// patch applies again if it does not replace checks that changed and
@@ -284,8 +300,22 @@ func (e *Engine) deriveEnv(ctx context.Context, p *Plan, it intent.Intent, in Pl
 		}
 		in.Problems = problems
 	case p.envBody(it.Name) == "" && len(in.RequiredNames) == 0:
-		p.patches[it.Name] = nil
-		return Desired{Resources: desiredOf(in.Base), Checks: in.BaseChecks}, nil
+		if p.reviewer == nil {
+			p.patches[it.Name] = nil
+			return Desired{Resources: desiredOf(in.Base), Checks: in.BaseChecks}, nil
+		}
+		// The base is the environment's state: with a reviewer it is
+		// validated, and so reviewed, as such; a violation is fixed by a
+		// patch, like any other problem of the environment.
+		d, problems, err := p.reapply(ctx, in, nil)
+		if err != nil {
+			return Desired{}, err
+		}
+		if problems == nil {
+			p.patches[it.Name] = nil
+			return d, nil
+		}
+		in.Problems = problems
 	}
 	if e.Planner == nil {
 		return Desired{}, errors.New("needs a patch but no planner is configured")

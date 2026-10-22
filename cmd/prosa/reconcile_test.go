@@ -272,7 +272,7 @@ func TestApplyRefusesBlockedPlan(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("exit code = %d, want 1 (stderr %q)", code, stderr.String())
 	}
-	if want := "Blocked:\n  app: three replicas contradict the check\n"; stdout.String() != want {
+	if want := "rules: not checked (no model)\n\nBlocked:\n  app: three replicas contradict the check\n"; stdout.String() != want {
 		t.Errorf("stdout = %q, want %q", stdout.String(), want)
 	}
 	if !strings.Contains(stderr.String(), "plan blocked: app: three replicas contradict the check") {
@@ -594,7 +594,7 @@ func TestApplyGatesByAutonomy(t *testing.T) {
 		t.Fatalf("auto: exit %d, applies %d (stderr %q)", code, fake.applies, stderr.String())
 	}
 	thing := func(comment string) string {
-		out := "Prosa will perform the following actions:\n\n  # app/thing will be created\n"
+		out := "rules: not checked (no model)\n\nProsa will perform the following actions:\n\n  # app/thing will be created\n"
 		if comment != "" {
 			out += "  # (" + comment + ")\n"
 		}

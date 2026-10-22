@@ -23,6 +23,7 @@ import (
 	"github.com/giammbo/prosa/internal/events"
 	"github.com/giammbo/prosa/internal/lock"
 	"github.com/giammbo/prosa/internal/planner"
+	"github.com/giammbo/prosa/rules"
 )
 
 const (
@@ -41,13 +42,62 @@ var plannerConversations = map[string][]string{
 	"app":      {"app-base", "app-staging", "app-blocked", "app-two", "app-staging-two"},
 }
 
+// The reviewer's conversations (ADR-034): each review starts the next
+// conversation of reviewConversations for its intent, or reviewNone, which
+// finds no violation, when there is none left. The first review of database
+// is that of the planner's first submission, whose subnet rules break
+// AWS-NET-001 (see subnetIngress).
+const (
+	reviewSubnets = "review-database-subnets"
+	reviewNone    = "review-none"
+)
+
+var reviewConversations = map[string][]string{"database": {reviewSubnets}}
+
+// isReview reports whether the conversation name is one of the reviewer.
+func isReview(name string) bool { return strings.HasPrefix(name, "review-") }
+
+// loadConversation loads testdata/llm/<name>.json as the planner's or, for
+// a review-* file, as the reviewer's.
+func loadConversation(name, path string) (*planner.Replay, error) {
+	if isReview(name) {
+		return planner.LoadReviewReplay(path)
+	}
+	return planner.LoadReplay(path)
+}
+
+// subnetProblems are the problems the engine returns to the first database
+// submission: one per violation the reviewer found, with the hint.
+func subnetProblems() []string {
+	var out []string
+	for _, v := range subnetViolations {
+		out = append(out, fmt.Sprintf("database/%s: breaks %s: %s (to keep it: --disable-rule %s, or except it in the intent)", v["key"], v["rule"], v["reason"], v["rule"]))
+	}
+	return out
+}
+
+// builtinRules is the rule set of a run without a rules/ folder: the
+// built-in rules, but those disabled as --disable-rule does.
+func builtinRules(t *testing.T, disabled ...string) rules.Set {
+	t.Helper()
+	builtin, err := rules.Builtin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	set, err := rules.NewSet(builtin, nil, nil, disabled)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return set
+}
+
 // wantSubmissions lists, per conversation, the problems the engine returns
 // to each submit_desired_state or submit_changes call, in order; nil means
 // accepted. A replay
 // cannot react to a problem it did not foresee, so any other answer of the
 // engine fails the test. Only checked when replaying.
 var wantSubmissions = map[string][][]string{
-	"database-base": {nil},
+	"database-base": {subnetProblems(), nil},
 	"cron-base": {
 		{`cron/job.schedule: validate aws_scheduler_schedule: expected mode to be one of ["OFF" "FLEXIBLE"], got off`},
 		nil,
@@ -64,11 +114,13 @@ var wantSubmissions = map[string][][]string{
 	"app-staging-two":  {nil},
 }
 
-// TestPlannerOnMoto plans the example intents with the Claude planner,
-// replaying the conversations in testdata/llm (recording them with
-// PROSA_LLM_RECORD=1 and credentials), and applies them on Moto: create,
-// steady state without the planner, a contradictory intent that blocks the
-// plan, then the replica change as a single update.
+// TestPlannerOnMoto plans the example intents with the Claude planner and
+// the reviewer of the built-in rules, replaying the conversations in
+// testdata/llm (recording them with PROSA_LLM_RECORD=1 and credentials), and
+// applies them on Moto: create (the reviewer flags the database's first
+// state, the planner fixes it), steady state without the planner nor the
+// reviewer, a contradictory intent that blocks the plan, then the replica
+// change as a single update.
 //
 // What Moto cannot do is adapted in the desired states (testdata/llm/states)
 // and listed here, with what the intents ask that they leave out:
@@ -80,11 +132,11 @@ var wantSubmissions = map[string][][]string{
 //     provider uses for PutMetricAlarm: "fails two nights in a row" becomes
 //     an EventBridge rule on failed runs that publishes each failure to the
 //     SNS topic, instead of an alarm on two consecutive daily periods.
-//   - Security group rules allow CIDR blocks, not other security groups:
-//     Moto returns a rule's referenced group as "<account>/<group>" (the
-//     provider, not asking Moto the account, cannot shorten it) and drops
-//     its description, so such rules would be replaced at every plan. The
-//     database admits its two private subnets, the app port the VPC.
+//   - Moto drops the description of a security group rule that references
+//     another group, so such a rule would be replaced at every plan: the
+//     database's ingress from the app's security group has none. The app
+//     port admits the VPC's CIDR (AWS-NET-002 allows a CIDR narrower than
+//     the internet).
 //   - Moto validates no certificate by DNS: it marks it issued about 60
 //     seconds after the request, which aws_acm_certificate_validation waits
 //     for. The validation CNAME and the record for staging.acme.example need
@@ -106,6 +158,8 @@ func TestPlannerOnMoto(t *testing.T) {
 	rec := newEventRecorder(t, filepath.Join(t.TempDir(), "events", "events.jsonl"), llm)
 	s := newEnvScript(t, rec, "staging")
 	rec.s = s
+	s.engine.Rules = builtinRules(t)
+	s.engine.Reviewer = rec.reviewer(&planner.Reviewer{Backend: planner.Anthropic{Messages: convs}, Model: planner.DefaultModel})
 	for _, name := range []string{"database.md", "app.md", "cron.md"} {
 		data, err := os.ReadFile(filepath.Join(examplesDir, name))
 		if err != nil {
@@ -268,7 +322,7 @@ func TestPlannerOnMoto(t *testing.T) {
 		p := s.plan(ctx, t)
 		var out bytes.Buffer
 		engine.Render(&out, p, engine.RenderOptions{})
-		if p.HasChanges() || p.LockDirty || p.IsBlocked() || out.String() != "No changes. Your infrastructure matches the intents.\n" {
+		if p.HasChanges() || p.LockDirty || p.IsBlocked() || out.String() != "rules: 10 active\n\nNo changes. Your infrastructure matches the intents.\n" {
 			t.Fatalf("plan after apply: HasChanges=%v LockDirty=%v Blockers=%v:\n%s", p.HasChanges(), p.LockDirty, p.Blockers, out.String())
 		}
 		sawService := false
@@ -313,7 +367,7 @@ func TestPlannerOnMoto(t *testing.T) {
 		if p.HasChanges() {
 			t.Errorf("blocked plan has changes: %v", summary(p))
 		}
-		if want := "Blocked:\n  " + p.Blockers[0] + "\n"; out.String() != want {
+		if want := "rules: 10 active\n\nBlocked:\n  " + p.Blockers[0] + "\n"; out.String() != want {
 			t.Errorf("render = %q, want %q", out.String(), want)
 		}
 		convs.check(t, append(slices.Clone(createConversations), "app-blocked"))
@@ -502,6 +556,32 @@ func TestPlannerOnMoto(t *testing.T) {
 			}
 		}
 
+		// rules.review, as "<intent>: <violations>": on the first run the base
+		// of each intent (database twice: its first state breaks AWS-NET-001
+		// on both subnet rules, the fix passes), then the staging patch of
+		// each; on the replica change the new base of app and its patch; none
+		// where nothing was planned, nor on the blocked app.
+		reviews := func(name string) []string {
+			var got []string
+			for _, e := range ofType(rec.ofRun(all, name), events.RulesReview) {
+				vs, _ := e.Data["violations"].([]any)
+				got = append(got, fmt.Sprintf("%s: %v", e.Intent, vs))
+			}
+			return got
+		}
+		for name, want := range map[string][]string{
+			"create": {"database: [AWS-NET-001 db.sg_ingress_private_a AWS-NET-001 db.sg_ingress_private_b]", "database: []",
+				"app: []", "cron: []", "database: []", "app: []", "cron: []"},
+			"steady state":   nil,
+			"contradiction":  nil,
+			"replica change": {"app: []", "app: []"},
+			"delete refused": nil, "delete approved": nil,
+		} {
+			if got := reviews(name); !slices.Equal(got, want) {
+				t.Errorf("rules.review of %q:\n  %v\nwant\n  %v", name, got, want)
+			}
+		}
+
 		// apply.op: ok for every resource created.
 		var ops []string
 		for _, e := range ofType(rec.ofRun(all, "create"), events.ApplyOp) {
@@ -635,28 +715,37 @@ func (l testLog) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// conversations is the planner's Messages: each planning request opens the
-// next conversation of its intent (see plannerConversations), replayed from
-// testdata/llm or, when recording, sent to the API and written there.
+// conversations is the Messages of the planner and of the reviewer: each
+// planning request opens the next conversation of its intent (see
+// plannerConversations), each review the next of reviewConversations (see
+// reviewNone), replayed from testdata/llm or, when recording, sent to the
+// API and written there (a review is sent, not recorded).
 type conversations struct {
-	record bool
-	open   func(name string) (planner.Messages, error)
+	record     bool
+	open       func(name string) (planner.Messages, error)
+	openReview func(name string) (planner.Messages, error)
 
-	mu       sync.Mutex
-	queue    map[string][]string
-	current  planner.Messages
-	started  []string
-	replays  map[string]*planner.Replay
-	requests int
+	mu          sync.Mutex
+	queue       map[string][]string
+	reviewQueue map[string][]string
+	current     planner.Messages // the planner's conversation
+	review      planner.Messages // the reviewer's
+	started     []string
+	reviews     []string // "<intent>:<conversation>" of each review, in order
+	replays     map[string]*planner.Replay
+	requests    int
 }
 
 // newConversations replays the recorded conversations, skipping the test
 // when one is missing, or records new ones with the SDK's credentials.
 func newConversations(t *testing.T, record bool) *conversations {
 	t.Helper()
-	c := &conversations{record: record, queue: map[string][]string{}, replays: map[string]*planner.Replay{}}
+	c := &conversations{record: record, queue: map[string][]string{}, reviewQueue: map[string][]string{}, replays: map[string]*planner.Replay{}}
 	for intent, names := range plannerConversations {
 		c.queue[intent] = slices.Clone(names)
+	}
+	for intent, names := range reviewConversations {
+		c.reviewQueue[intent] = slices.Clone(names)
 	}
 	path := func(name string) string { return filepath.Join(llmDir, name+".json") }
 	if record {
@@ -667,6 +756,7 @@ func newConversations(t *testing.T, record bool) *conversations {
 		c.open = func(name string) (planner.Messages, error) {
 			return &planner.Recorder{Inner: l.Messages, Path: path(name)}, nil
 		}
+		c.openReview = func(string) (planner.Messages, error) { return l.Messages, nil }
 		return c
 	}
 	for _, names := range plannerConversations {
@@ -684,20 +774,31 @@ func newConversations(t *testing.T, record bool) *conversations {
 		c.replays[name] = r
 		return r, nil
 	}
+	c.openReview = func(name string) (planner.Messages, error) { return planner.LoadReviewReplay(path(name)) }
 	return c
 }
 
-var planIntentRE = regexp.MustCompile(`^Plan the intent "([^"]+)"`)
+var (
+	planIntentRE   = regexp.MustCompile(`^Plan the intent "([^"]+)"`)
+	reviewIntentRE = regexp.MustCompile(`^Review the intent "([^"]+)"`)
+)
 
-// New sends a request to the conversation it belongs to: a request with a
-// single message starts the next conversation of its intent.
+// New sends a request to the conversation it belongs to, the planner's or,
+// when its first message asks for a review, the reviewer's (a review runs
+// inside a planning conversation, while the planner waits for its answer): a
+// request with a single message starts the next conversation of its intent.
 func (c *conversations) New(ctx context.Context, params anthropic.BetaMessageNewParams) (*anthropic.BetaMessage, error) {
-	c.mu.Lock()
-	if len(params.Messages) == 1 {
-		var text string
+	var text string
+	if len(params.Messages) > 0 {
 		if blocks := params.Messages[0].Content; len(blocks) > 0 && blocks[0].OfText != nil {
 			text = blocks[0].OfText.Text
 		}
+	}
+	if m := reviewIntentRE.FindStringSubmatch(text); m != nil {
+		return c.newReview(ctx, params, m[1])
+	}
+	c.mu.Lock()
+	if len(params.Messages) == 1 {
 		m := planIntentRE.FindStringSubmatch(text)
 		if m == nil {
 			c.mu.Unlock()
@@ -724,6 +825,38 @@ func (c *conversations) New(ctx context.Context, params anthropic.BetaMessageNew
 		return nil, fmt.Errorf("conversations: request before any conversation started")
 	}
 	return cur.New(ctx, params)
+}
+
+// newReview is New for a request of the reviewer about intent.
+func (c *conversations) newReview(ctx context.Context, params anthropic.BetaMessageNewParams, intent string) (*anthropic.BetaMessage, error) {
+	c.mu.Lock()
+	if len(params.Messages) == 1 {
+		name := reviewNone
+		if q := c.reviewQueue[intent]; len(q) > 0 {
+			name, c.reviewQueue[intent] = q[0], q[1:]
+		}
+		msgs, err := c.openReview(name)
+		if err != nil {
+			c.mu.Unlock()
+			return nil, err
+		}
+		c.review = msgs
+		c.reviews = append(c.reviews, intent+":"+name)
+	}
+	cur := c.review
+	c.requests++
+	c.mu.Unlock()
+	if cur == nil {
+		return nil, fmt.Errorf("conversations: review request before any review started")
+	}
+	return cur.New(ctx, params)
+}
+
+// reviewed returns "<intent>:<conversation>" of each review so far.
+func (c *conversations) reviewed() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return slices.Clone(c.reviews)
 }
 
 func (c *conversations) requestCount() int {

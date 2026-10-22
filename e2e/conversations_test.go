@@ -23,7 +23,10 @@ import (
 // testdata/llm/states (the base of each intent and the result of each
 // environment; the patch of an environment is the difference, see
 // patches_test.go), as a sequence of Opus turns (empty thinking block with
-// a signature, tool calls with ids, stop reason, usage). Rewrite them with
+// a signature, tool calls with ids, stop reason, usage). The reviewer's
+// conversations (ADR-034), the files named review-*, are one turn each: the
+// violations of the planner's first database submission, and no violation.
+// Rewrite them with
 //
 //	PROSA_LLM_SIMULATE=1 go test ./e2e -run TestWriteSimulatedConversations
 //
@@ -106,6 +109,52 @@ func webTwoState(web desiredState) desiredState {
 		}
 	}
 	return desiredState{Resources: resources, Checks: checks}
+}
+
+// subnetIngress returns the database state as the planner first writes it,
+// breaking AWS-NET-001: Postgres admitted from the CIDR of each private
+// subnet instead of from the app's security group (db.sg_ingress_from_app).
+func subnetIngress(pg desiredState) []stateResource {
+	var out []stateResource
+	if err := roundTrip(pg.Resources, &out); err != nil {
+		panic(err)
+	}
+	at := slices.IndexFunc(out, func(r stateResource) bool { return r.Key == "db.sg_ingress_from_app" })
+	if at < 0 {
+		panic("subnetIngress: no db.sg_ingress_from_app")
+	}
+	from := func(az string) stateResource {
+		return stateResource{Key: "db.sg_ingress_private_" + az, Type: "aws_vpc_security_group_ingress_rule", Config: map[string]any{
+			"security_group_id": "${database/db.sg.id}",
+			"description":       "Postgres from the private subnet in eu-south-1" + az,
+			"cidr_ipv4":         "${database/net.subnet_private_" + az + ".cidr_block}",
+			"ip_protocol":       "tcp",
+			"from_port":         json.Number("5432"),
+			"to_port":           json.Number("5432"),
+			"tags":              map[string]any{"team": "platform"},
+		}}
+	}
+	return slices.Replace(out, at, at+1, from("a"), from("b"))
+}
+
+// subnetViolations are the reviewer's answer to the first database
+// submission: AWS-NET-001 on each subnet rule.
+var subnetViolations = []map[string]string{
+	{"rule": "AWS-NET-001", "key": "db.sg_ingress_private_a", "reason": subnetReason("a")},
+	{"rule": "AWS-NET-001", "key": "db.sg_ingress_private_b", "reason": subnetReason("b")},
+}
+
+func subnetReason(az string) string {
+	return "It admits Postgres from the CIDR of the private subnet in eu-south-1" + az +
+		"; the database's port must be open only to the security group of its clients: reference net.app_sg by its id instead."
+}
+
+// reviewCall is a submit_review call with the violations given.
+func reviewCall(violations []map[string]string) simCall {
+	if violations == nil {
+		violations = []map[string]string{}
+	}
+	return simCall{"submit_review", map[string]any{"violations": violations}}
 }
 
 // badOp is an operation the model gets wrong in the first submission of
@@ -200,16 +249,19 @@ func simulatedConversations(t *testing.T) map[string][]simTurn {
 				"aws_route_table", "aws_route", "aws_route_table_association")},
 			{calls: schemaCalls("aws_security_group", "aws_vpc_security_group_ingress_rule",
 				"aws_vpc_security_group_egress_rule", "aws_db_subnet_group", "aws_db_instance")},
-			{calls: []simCall{submitCall(pg.Resources, pg.Checks)}},
+			{calls: []simCall{submitCall(subnetIngress(pg), pg.Checks)}},
+			{text: "The reviewer is right: the database admits its port only from the application's security group now, not from the subnets.",
+				calls: []simCall{submitCall(pg.Resources, pg.Checks)}},
 		},
 		"cron-base": {
 			{calls: []simCall{
 				searchCall("scheduler schedule"),
 				searchCall("ecs cluster task definition"),
 				searchCall("iam role policy"),
+				searchCall("cloudwatch log group"),
 			}},
 			{calls: schemaCalls("aws_scheduler_schedule", "aws_ecs_cluster", "aws_ecs_task_definition",
-				"aws_iam_role", "aws_iam_role_policy")},
+				"aws_iam_role", "aws_iam_role_policy", "aws_cloudwatch_log_group")},
 			{calls: []simCall{
 				schemaCall("aws_scheduler_schedule.target.ecs_parameters"),
 			}},
@@ -222,9 +274,10 @@ func simulatedConversations(t *testing.T) map[string][]simTurn {
 				searchCall("lb listener target group"),
 				searchCall("acm certificate validation"),
 				searchCall("iam role policy"),
+				searchCall("cloudwatch log group"),
 			}},
 			{calls: schemaCalls("aws_ecs_cluster", "aws_ecs_task_definition", "aws_ecs_service",
-				"aws_iam_role", "aws_iam_role_policy")},
+				"aws_iam_role", "aws_iam_role_policy", "aws_cloudwatch_log_group")},
 			{calls: schemaCalls("aws_security_group", "aws_vpc_security_group_ingress_rule",
 				"aws_vpc_security_group_egress_rule", "aws_lb", "aws_lb_target_group", "aws_lb_listener",
 				"aws_acm_certificate", "aws_acm_certificate_validation")},
@@ -247,6 +300,10 @@ func simulatedConversations(t *testing.T) map[string][]simTurn {
 		"app-staging-two": {
 			{calls: []simCall{changesCall(diffStates(webTwo, webTwoStaging))}},
 		},
+		// The reviewer: the subnet rules of the first database submission
+		// break AWS-NET-001; every other review finds nothing.
+		reviewSubnets: {{calls: []simCall{reviewCall(subnetViolations)}}},
+		reviewNone:    {{calls: []simCall{reviewCall(nil)}}},
 	}
 	for _, env := range []string{"staging", "prod"} {
 		for _, name := range []string{"database", "app", "cron"} {
@@ -271,7 +328,7 @@ func TestWriteSimulatedConversations(t *testing.T) {
 		if err := os.WriteFile(path, data, 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := planner.LoadReplay(path); err != nil {
+		if _, err := loadConversation(name, path); err != nil {
 			t.Fatalf("%s does not load as a replay: %v", path, err)
 		}
 		t.Logf("wrote %s (%d turns)", path, len(turns))
@@ -413,8 +470,13 @@ const (
 )
 
 // renderConversation renders turns as the recording LoadReplay reads, with
-// the planner's current prompt version and fingerprint.
+// the planner's current prompt version and fingerprint; a conversation of
+// the reviewer (isReview) as LoadReviewReplay reads it, with the reviewer's.
 func renderConversation(name string, turns []simTurn) ([]byte, error) {
+	version, fp := planner.PromptVersion, planner.PromptFingerprint()
+	if isReview(name) {
+		version, fp = planner.ReviewPromptVersion, planner.ReviewPromptFingerprint()
+	}
 	var msgs []simMessage
 	cached := 0
 	pending := userTokens
@@ -461,7 +523,7 @@ func renderConversation(name string, turns []simTurn) ([]byte, error) {
 		PromptVersion string       `json:"prompt_version"`
 		PromptSHA256  string       `json:"prompt_sha256"`
 		Turns         []simMessage `json:"turns"`
-	}{planner.PromptVersion, planner.PromptFingerprint(), msgs}, "", "  ")
+	}{version, fp, msgs}, "", "  ")
 	if err != nil {
 		return nil, err
 	}

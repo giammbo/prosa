@@ -1,6 +1,6 @@
 {
-  "prompt_version": "m7-2",
-  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "prompt_version": "m8-3",
+  "prompt_sha256": "0c337d1f1609a45de84d3afea0d166d2fbacaf30a2c69c6a71bc470a4c367500",
   "turns": [
     {
       "id": "msg_01g9fT5kCco5yGR8AyD8LkVP",
@@ -33,6 +33,18 @@
               },
               {
                 "op": "set",
+                "key": "app.logs",
+                "path": "name",
+                "value": "/ecs/staging-web"
+              },
+              {
+                "op": "set",
+                "key": "app.logs",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
                 "key": "app.execution_role",
                 "path": "name",
                 "value": "staging-web-execution"
@@ -40,6 +52,18 @@
               {
                 "op": "set",
                 "key": "app.execution_role",
+                "path": "tags.env",
+                "value": "staging"
+              },
+              {
+                "op": "set",
+                "key": "app.task_role",
+                "path": "name",
+                "value": "staging-web-task"
+              },
+              {
+                "op": "set",
+                "key": "app.task_role",
                 "path": "tags.env",
                 "value": "staging"
               },
@@ -180,7 +204,7 @@
       "stop_details": null,
       "usage": {
         "input_tokens": 900,
-        "output_tokens": 993,
+        "output_tokens": 1088,
         "cache_creation_input_tokens": 2360,
         "cache_read_input_tokens": 0,
         "service_tier": "standard"

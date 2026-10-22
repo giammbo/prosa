@@ -13,6 +13,7 @@ import (
 	"github.com/giammbo/prosa/internal/checks"
 	"github.com/giammbo/prosa/internal/intent"
 	"github.com/giammbo/prosa/internal/lock"
+	"github.com/giammbo/prosa/rules"
 )
 
 // planInput builds the planner's input for it. view and checkView hold the
@@ -22,7 +23,8 @@ import (
 // "patch" otherwise, where a patch applies to the lock's state; in an
 // environment derived from the base it is always "patch", on the base
 // (baseInput). Validate applies a patch first: one that does not apply is a
-// validation problem.
+// validation problem. With a reviewer, a state that passes validation is
+// reviewed against the rules (review), and the schemas carry the rules.
 func (p *Plan) planInput(it intent.Intent, view map[string][]DesiredResource, checkView map[string][]lock.Check, lockKeys map[string][]string) PlanInput {
 	others := maps.Clone(view)
 	delete(others, it.Name)
@@ -54,16 +56,17 @@ func (p *Plan) planInput(it intent.Intent, view map[string][]DesiredResource, ch
 	if p.base != nil {
 		p.baseInput(&in)
 	}
-	for _, name := range slices.Sorted(maps.Keys(others)) {
-		rs := slices.Clone(others[name])
-		slices.SortFunc(rs, func(a, b DesiredResource) int { return strings.Compare(a.Key, b.Key) })
-		for _, r := range rs {
-			in.Available = append(in.Available, AvailableResource{Intent: name, Key: r.Key, Type: r.Type})
-		}
-	}
+	in.Available = availableIn(others)
 	refBy := referencedBy(it.Name, lockKeys[it.Name], others)
 	checkedBy(refBy, it.Name, lockKeys[it.Name], otherChecks)
 	in.Referenced = slices.Sorted(maps.Keys(refBy))
+	var exceptions []rules.Exception
+	violated := map[string]bool{} // rule IDs the reviewer flagged for it
+	if p.reviewer != nil {
+		in.RulesHash = rules.Hash(p.rules.Active)
+		in.Schemas = rulesCatalog{in.Schemas, p.rules}
+		exceptions = p.exceptionsFor(it)
+	}
 	in.Validate = func(ctx context.Context, d Desired) error {
 		if err := p.checkPatch(in, d); err != nil {
 			return err
@@ -82,16 +85,19 @@ func (p *Plan) planInput(it intent.Intent, view map[string][]DesiredResource, ch
 			named = uncoveredNames(it.Name, in.RequiredNames, ops, d.Resources, it.Body, p.envBody(it.Name))
 		}
 		err = p.validateCandidate(ctx, it, d.Resources, d.Checks, others, lockKeys, refBy, prevTypes)
-		if len(named) == 0 {
+		if len(named) > 0 {
+			var ve *ValidationError
+			if errors.As(err, &ve) {
+				named = append(ve.Problems, named...)
+			} else if err != nil {
+				return err
+			}
+			return newValidationError(named)
+		}
+		if err != nil || p.reviewer == nil {
 			return err
 		}
-		var ve *ValidationError
-		if errors.As(err, &ve) {
-			named = append(ve.Problems, named...)
-		} else if err != nil {
-			return err
-		}
-		return newValidationError(named)
+		return p.review(ctx, it, d.Resources, in.Available, exceptions, violated)
 	}
 	in.Canonical = p.canonical
 	return in

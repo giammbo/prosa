@@ -1,6 +1,6 @@
 {
-  "prompt_version": "m7-2",
-  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "prompt_version": "m8-3",
+  "prompt_sha256": "0c337d1f1609a45de84d3afea0d166d2fbacaf30a2c69c6a71bc470a4c367500",
   "turns": [
     {
       "id": "msg_01zvsQgpVZD1RUsSGbF9rRTu",
@@ -26,7 +26,7 @@
           "id": "toolu_01h6oXAAc4hxCHWBz8tS9Hbe",
           "name": "get_resource_schema",
           "input": {
-            "type": "aws_iam_role"
+            "type": "aws_cloudwatch_log_group"
           }
         },
         {
@@ -34,7 +34,7 @@
           "id": "toolu_016WpTR98pLy55Un4VMnSMo8",
           "name": "get_resource_schema",
           "input": {
-            "type": "aws_ecs_task_definition"
+            "type": "aws_iam_role"
           }
         },
         {
@@ -42,7 +42,7 @@
           "id": "toolu_01mnfEjT3iwk8c2V7ZaaMPop",
           "name": "get_resource_schema",
           "input": {
-            "type": "aws_security_group"
+            "type": "aws_ecs_task_definition"
           }
         }
       ],
@@ -51,7 +51,7 @@
       "stop_details": null,
       "usage": {
         "input_tokens": 900,
-        "output_tokens": 442,
+        "output_tokens": 444,
         "cache_creation_input_tokens": 2360,
         "cache_read_input_tokens": 0,
         "service_tier": "standard"
@@ -88,6 +88,18 @@
               },
               {
                 "op": "set",
+                "key": "app.logs",
+                "path": "name",
+                "value": "/ecs/prod-web"
+              },
+              {
+                "op": "set",
+                "key": "app.logs",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
                 "key": "app.execution_role",
                 "path": "name",
                 "value": "prod-web-execution"
@@ -97,6 +109,50 @@
                 "key": "app.execution_role",
                 "path": "tags.env",
                 "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.task_role",
+                "path": "name",
+                "value": "prod-web-task"
+              },
+              {
+                "op": "set",
+                "key": "app.task_role",
+                "path": "tags.env",
+                "value": "prod"
+              },
+              {
+                "op": "set",
+                "key": "app.task",
+                "path": "container_definitions",
+                "value": [
+                  {
+                    "essential": true,
+                    "image": "ghcr.io/acme/web:1.4.2",
+                    "logConfiguration": {
+                      "logDriver": "awslogs",
+                      "options": {
+                        "awslogs-group": "${app/app.logs.name}",
+                        "awslogs-region": "eu-west-1",
+                        "awslogs-stream-prefix": "web"
+                      }
+                    },
+                    "name": "web",
+                    "portMappings": [
+                      {
+                        "containerPort": 8000,
+                        "protocol": "tcp"
+                      }
+                    ],
+                    "secrets": [
+                      {
+                        "name": "DATABASE_URL",
+                        "valueFrom": "${database/db.instance.master_user_secret.0.secret_arn}"
+                      }
+                    ]
+                  }
+                ]
               },
               {
                 "op": "set",
@@ -241,9 +297,9 @@
       "stop_details": null,
       "usage": {
         "input_tokens": 5600,
-        "output_tokens": 996,
+        "output_tokens": 1238,
         "cache_creation_input_tokens": 0,
-        "cache_read_input_tokens": 3702,
+        "cache_read_input_tokens": 3704,
         "service_tier": "standard"
       }
     }

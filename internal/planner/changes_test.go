@@ -320,3 +320,28 @@ func TestCacheStoresPatch(t *testing.T) {
 		}
 	}
 }
+
+// A rule fix of an applied intent in root mode (no base) passes problems the
+// planner must see and the cache must key on (ADR-034).
+func TestRootPatchModeShowsProblems(t *testing.T) {
+	in := planInput("app", "Two queues.", nil)
+	in.Mode = "patch"
+	in.PreviousBody = "Two queues."
+	in.Previous = []lock.Resource{{Key: "queue.orders", Type: "aws_sqs_queue", Chosen: map[string]any{"name": "orders"}}}
+	in.Problems = []string{"AWS-SQS-001 queue.orders: not encrypted"}
+	got, err := userMessage(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, "<problems>\nAWS-SQS-001 queue.orders: not encrypted\n</problems>") {
+		t.Errorf("message lacks the problems block:\n%s", got)
+	}
+	if !strings.Contains(systemPrompt, "<problems> lists what is wrong with the previous resources") {
+		t.Error("system prompt does not explain <problems>")
+	}
+	k1, _ := cacheKey(in, "m")
+	in.Problems = []string{"AWS-SQS-002 queue.orders: other"}
+	if k2, _ := cacheKey(in, "m"); k1 == k2 {
+		t.Error("root mode cache key ignores Problems")
+	}
+}

@@ -761,6 +761,9 @@ func TestSystemPromptRules(t *testing.T) {
 		`Compile every sentence of the intent's "Checks" section (or "Verifiche", its older name) into exactly one check`,
 		`its name is the sentence, exactly as written`,
 		`If no type can verify a sentence, submit it as unverifiable with the reason`,
+		"# Rules",
+		"a reviewer checks the desired state against them",
+		"naming its ID in its prose",
 	} {
 		if !strings.Contains(systemPrompt, want) {
 			t.Errorf("system prompt lacks %q", want)
@@ -769,8 +772,11 @@ func TestSystemPromptRules(t *testing.T) {
 	if strings.Contains(systemPrompt, "never part of a longer string") {
 		t.Error("system prompt still forbids templates")
 	}
-	if PromptVersion != "m7-2" {
-		t.Errorf("PromptVersion = %q, want m7-2", PromptVersion)
+	if PromptVersion != "m8-3" {
+		t.Errorf("PromptVersion = %q, want m8-3", PromptVersion)
+	}
+	if !strings.Contains(systemPrompt, "or the rule violations to fix") {
+		t.Error("system prompt does not say that <patch_problems> may hold rule violations")
 	}
 }
 

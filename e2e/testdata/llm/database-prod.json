@@ -1,6 +1,6 @@
 {
-  "prompt_version": "m7-2",
-  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "prompt_version": "m8-3",
+  "prompt_sha256": "0c337d1f1609a45de84d3afea0d166d2fbacaf30a2c69c6a71bc470a4c367500",
   "turns": [
     {
       "id": "msg_01DFwE2fPJR92Q977LTWrfqn",
@@ -202,25 +202,7 @@
               },
               {
                 "op": "set",
-                "key": "db.sg_ingress_private_a",
-                "path": "description",
-                "value": "Postgres from the private subnet in eu-west-1a"
-              },
-              {
-                "op": "set",
-                "key": "db.sg_ingress_private_a",
-                "path": "tags.env",
-                "value": "prod"
-              },
-              {
-                "op": "set",
-                "key": "db.sg_ingress_private_b",
-                "path": "description",
-                "value": "Postgres from the private subnet in eu-west-1b"
-              },
-              {
-                "op": "set",
-                "key": "db.sg_ingress_private_b",
+                "key": "db.sg_ingress_from_app",
                 "path": "tags.env",
                 "value": "prod"
               },
@@ -281,7 +263,7 @@
       "stop_details": null,
       "usage": {
         "input_tokens": 5600,
-        "output_tokens": 1166,
+        "output_tokens": 1058,
         "cache_creation_input_tokens": 0,
         "cache_read_input_tokens": 3697,
         "service_tier": "standard"

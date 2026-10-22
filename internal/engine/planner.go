@@ -68,12 +68,18 @@ type PlanInput struct {
 	RequiredNames []string
 	// Region is the AWS region the provider is configured for.
 	Region string
-	// Schemas looks up the provider's resource types.
+	// Schemas looks up the provider's resource types; with a reviewer, a
+	// type's description ends with the rules that apply to it (ADR-034).
 	Schemas SchemaCatalog
+	// RulesHash is rules.Hash of the active rules when a reviewer checks
+	// them, "" otherwise: what the rules add to the planner cache's key.
+	RulesHash string
 	// Validate checks a candidate desired state with the rules the plan
-	// applies, plus the Referenced keys and the types of the Previous keys:
-	// nil or a *ValidationError. It changes nothing and can be called any
-	// number of times.
+	// applies, plus the Referenced keys and the types of the Previous keys,
+	// then, with a reviewer, against the best-practice rules (ADR-034): nil,
+	// a *ValidationError, or a failure of the provider or the reviewer. It
+	// changes nothing but the plan's count of the violations fixed, and can
+	// be called any number of times.
 	Validate func(ctx context.Context, d Desired) error
 	// Canonical returns d in the one textual form the lock keeps: a lone
 	// object given for a list or set block of at most one item becomes a

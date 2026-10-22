@@ -134,7 +134,7 @@ func (l *LLM) Plan(ctx context.Context, in engine.PlanInput) (engine.Desired, er
 		}
 		res.Turns = turn
 		res.add(t)
-		if err := stopError(in.Intent.Name, t); err != nil {
+		if err := stopError("planner", in.Intent.Name, t); err != nil {
 			return engine.Desired{}, planErr("planner stopped: "+t.Stop, err)
 		}
 		if m, ok := t.message(); ok {
@@ -240,23 +240,23 @@ func submit(ctx context.Context, in engine.PlanInput, tool, input string) (engin
 	}
 }
 
-// stopError returns the error for a turn that cannot be continued: a
-// refusal (after any fallback), or output cut at max_tokens or at the
-// context window.
-func stopError(name string, t Turn) error {
+// stopError returns the error of the job (planner or reviewer) for a turn
+// that cannot be continued: a refusal (after any fallback), or output cut at
+// max_tokens or at the context window.
+func stopError(job, name string, t Turn) error {
 	switch t.Stop {
 	case StopRefusal:
 		detail := t.StopDetail
 		if detail == "" {
 			detail = "no detail"
 		}
-		return fmt.Errorf("planner: intent %s: the model refused (%s)", name, detail)
+		return fmt.Errorf("%s: intent %s: the model refused (%s)", job, name, detail)
 	case StopMaxTokens:
 		detail := t.StopDetail
 		if detail == "" {
 			detail = StopMaxTokens
 		}
-		return fmt.Errorf("planner: intent %s: response cut off (%s)", name, detail)
+		return fmt.Errorf("%s: intent %s: response cut off (%s)", job, name, detail)
 	}
 	return nil
 }

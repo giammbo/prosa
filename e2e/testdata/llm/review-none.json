@@ -1,0 +1,37 @@
+{
+  "prompt_version": "r1",
+  "prompt_sha256": "7217354285532ee82e6e7f43fb1eb811fceea218b2d27c19a38fbcb0a68f0f36",
+  "turns": [
+    {
+      "id": "msg_01RTqYZR4MMdTGsw5DKCP9Po",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EoU6XLSBmNl2Q/QfCLzZiSwOTPxyqQp2okxaOhctAzEhWb5i54QB6oxwBb+ppWIeSaZhCDDXr9oDvCll/SIRJqk4I7kNmAibmneOoMB15v7Pev/3E/sUmCon+XskBaHWO7kkvhcbS0j336uC/glQpnqQ/BpQG/NsNv2UaeUWSMCsrL7bh0cy9VPLtQojh+26lRM4Qrewt12lCUnrb+ozgHlxsmFhMvqZrPdMYl43VMW4ePS6dc"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01kqqkcmjzpv1fq9WnZwh1qD",
+          "name": "submit_review",
+          "input": {
+            "violations": []
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 900,
+        "output_tokens": 313,
+        "cache_creation_input_tokens": 2360,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

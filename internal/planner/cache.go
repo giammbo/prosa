@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"sort"
@@ -16,11 +17,14 @@ import (
 
 // Cached wraps a planner with an on-disk cache of its answers, one JSON file
 // per key in Dir. The key covers everything that shapes the answer (the
-// intent and its name, what the lock recorded, the neighbours, the model and
-// the prompt) and never the schemas, the validator or the canonicalizer. A hit is still validated, so a
-// provider that changed since is re-planned; blocked answers and errors are
-// never stored, and an answer the provider rejects at plan time is dropped
-// (Forget). Cache failures never fail a plan: they just cost a re-plan.
+// intent and its name, what the lock recorded, the neighbours, the hash of
+// the rules, the model and the prompt) and never the schemas, the validator
+// or the canonicalizer. A hit is still validated (and so reviewed against the
+// rules), so a provider that changed since is re-planned, while a failure of
+// Validate other than a *engine.ValidationError fails the plan; blocked
+// answers and errors are never stored, and an answer the provider rejects at
+// plan time is dropped (Forget). Cache failures never fail a plan: they just
+// cost a re-plan.
 // Model and PatchModel are those of Inner: a patch is keyed by PatchModel
 // (Model when empty), like LLM.
 type Cached struct {
@@ -78,6 +82,7 @@ type cacheKeyInput struct {
 	Available     []engine.AvailableResource
 	Referenced    []string
 	Region        string
+	RulesHash     string `json:",omitempty"`
 	Model         string
 	PromptVersion string
 }
@@ -107,6 +112,7 @@ func cacheKey(in engine.PlanInput, model string) (string, error) {
 		Available:     append([]engine.AvailableResource{}, in.Available...),
 		Referenced:    append([]string{}, in.Referenced...),
 		Region:        in.Region,
+		RulesHash:     in.RulesHash,
 		Model:         model,
 		PromptVersion: PromptVersion,
 	}
@@ -129,12 +135,13 @@ func cacheKey(in engine.PlanInput, model string) (string, error) {
 				return "", err
 			}
 		}
-		k.Problems, k.RequiredNames = in.Problems, in.RequiredNames
+		k.RequiredNames = in.RequiredNames
 	} else {
 		for _, r := range in.Previous {
 			k.Previous = append(k.Previous, previousResource{Key: r.Key, Type: r.Type, Config: r.Chosen, DependsOn: r.DependsOn})
 		}
 	}
+	k.Problems = in.Problems
 	sort.Slice(k.Previous, func(i, j int) bool { return k.Previous[i].Key < k.Previous[j].Key })
 	sort.Slice(k.Available, func(i, j int) bool {
 		a, b := k.Available[i], k.Available[j]
@@ -148,7 +155,7 @@ func cacheKey(in engine.PlanInput, model string) (string, error) {
 }
 
 // Plan answers from the cache when it can, else asks Inner and stores a
-// non-blocked answer.
+// non-blocked answer. A hit that Validate rejects with problems is re-planned.
 func (c *Cached) Plan(ctx context.Context, in engine.PlanInput) (engine.Desired, error) {
 	c.last.set(Result{})
 	job, model := jobModel(in.Mode, c.Model, c.PatchModel)
@@ -158,10 +165,18 @@ func (c *Cached) Plan(ctx context.Context, in engine.PlanInput) (engine.Desired,
 	}
 	path := filepath.Join(c.Dir, key+".json")
 	if d, ok := readCached(path); ok {
-		if in.Validate == nil || in.Validate(ctx, d) == nil {
+		var err error
+		if in.Validate != nil {
+			err = in.Validate(ctx, d)
+		}
+		var ve *engine.ValidationError
+		switch {
+		case err == nil:
 			c.last.set(Result{Intent: in.Intent.Name, Job: job, Model: model, Cached: true})
 			c.remember(in.Intent.Name, path)
 			return d, nil
+		case !errors.As(err, &ve):
+			return engine.Desired{}, err // the provider or the reviewer failed: so does the plan
 		}
 	}
 	d, err := c.inner(ctx, in)
@@ -198,12 +213,18 @@ func readCached(path string) (engine.Desired, bool) {
 	return d, true
 }
 
-// writeCached writes atomically (temp file, then rename); errors are ignored.
+// writeCached writes d to path; errors are ignored.
 func writeCached(dir, path string, d engine.Desired) {
 	data, err := json.Marshal(d)
 	if err != nil {
 		return
 	}
+	writeFileAtomic(dir, path, data)
+}
+
+// writeFileAtomic writes data to path in dir (created 0700) atomically: a
+// temp file (0600), then a rename. Errors are ignored.
+func writeFileAtomic(dir, path string, data []byte) {
 	if os.MkdirAll(dir, 0o700) != nil {
 		return
 	}

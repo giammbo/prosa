@@ -156,3 +156,72 @@ func TestPlannerResultEventHasJobBackend(t *testing.T) {
 		t.Errorf("event = %+v, want job patch, backend openai, model qwen3", ev)
 	}
 }
+
+func TestRulesReviewEvent(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "events.jsonl")
+	l, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	l.RulesReview(planner.Result{Intent: "app", Job: "review", Model: "m", ServedBy: "m", Turns: 1, Dropped: 2, Usage: planner.Usage{Input: 3, Output: 4}},
+		[]string{"AWS-SQS-001", "AWS-NET-001"}, []string{"AWS-SQS-001 queue.orders"})
+	l.Close()
+	data, _ := os.ReadFile(path)
+	if strings.Contains(string(data), "reason") {
+		t.Errorf("the event carries a reason: %s", data)
+	}
+	var e struct {
+		Type, Intent string
+		Data         map[string]any
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(data), &e); err != nil {
+		t.Fatal(err)
+	}
+	if e.Type != RulesReview || RulesReview != "rules.review" || e.Intent != "app" {
+		t.Errorf("event = %+v", e)
+	}
+	for _, k := range []string{"rules", "violations", "dropped", "turns", "model", "served_by", "cached", "usage"} {
+		if _, ok := e.Data[k]; !ok {
+			t.Errorf("data lacks %q: %v", k, e.Data)
+		}
+	}
+	if v := e.Data["violations"].([]any); len(v) != 1 || v[0] != "AWS-SQS-001 queue.orders" {
+		t.Errorf("violations = %v", v)
+	}
+}
+
+// The plan event names the rules a change answers (ADR-034), and only then.
+func TestPlanEventCarriesRule(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "events.jsonl")
+	l, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	l.Planned(&engine.Plan{Changes: []engine.Change{
+		{Intent: "database", Key: "db.sg_ingress", Type: "aws_vpc_security_group_ingress_rule", Action: engine.Update, Rule: "AWS-NET-001"},
+		{Intent: "app", Key: "queue", Type: "aws_sqs_queue", Action: engine.Create},
+	}})
+	l.Close()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var e struct {
+		Type string
+		Data struct {
+			Changes []map[string]any
+		}
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(data), &e); err != nil {
+		t.Fatal(err)
+	}
+	if len(e.Data.Changes) != 2 {
+		t.Fatalf("changes = %v", e.Data.Changes)
+	}
+	if got := e.Data.Changes[0]["rule"]; got != "AWS-NET-001" {
+		t.Errorf("rule of the fix = %v, want AWS-NET-001", got)
+	}
+	if _, ok := e.Data.Changes[1]["rule"]; ok {
+		t.Errorf("a change answering no rule has one: %v", e.Data.Changes[1])
+	}
+}

@@ -202,28 +202,12 @@
         }
       },
       {
-        "key": "db.sg_ingress_private_a",
+        "key": "db.sg_ingress_from_app",
         "type": "aws_vpc_security_group_ingress_rule",
         "config": {
-          "cidr_ipv4": "${database/net.subnet_private_a.cidr_block}",
-          "description": "Postgres from the private subnet in eu-south-1a",
           "from_port": 5432,
           "ip_protocol": "tcp",
-          "security_group_id": "${database/db.sg.id}",
-          "tags": {
-            "team": "platform"
-          },
-          "to_port": 5432
-        }
-      },
-      {
-        "key": "db.sg_ingress_private_b",
-        "type": "aws_vpc_security_group_ingress_rule",
-        "config": {
-          "cidr_ipv4": "${database/net.subnet_private_b.cidr_block}",
-          "description": "Postgres from the private subnet in eu-south-1b",
-          "from_port": 5432,
-          "ip_protocol": "tcp",
+          "referenced_security_group_id": "${database/net.app_sg.id}",
           "security_group_id": "${database/db.sg.id}",
           "tags": {
             "team": "platform"
@@ -316,6 +300,17 @@
         }
       },
       {
+        "key": "app.logs",
+        "type": "aws_cloudwatch_log_group",
+        "config": {
+          "name": "/ecs/web",
+          "retention_in_days": 30,
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
         "key": "app.execution_role",
         "type": "aws_iam_role",
         "config": {
@@ -357,6 +352,50 @@
         }
       },
       {
+        "key": "app.execution_role_logs",
+        "type": "aws_iam_role_policy",
+        "config": {
+          "name": "write-logs",
+          "policy": {
+            "Statement": [
+              {
+                "Action": [
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents"
+                ],
+                "Effect": "Allow",
+                "Resource": "${app/app.logs.arn}:*"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "role": "${app/app.execution_role.name}"
+        }
+      },
+      {
+        "key": "app.task_role",
+        "type": "aws_iam_role",
+        "config": {
+          "assume_role_policy": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ecs-tasks.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "description": "Role of the web app containers, for the application's own permissions",
+          "name": "web-task",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
         "key": "app.task",
         "type": "aws_ecs_task_definition",
         "config": {
@@ -364,6 +403,14 @@
             {
               "essential": true,
               "image": "ghcr.io/acme/web:1.4.2",
+              "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                  "awslogs-group": "${app/app.logs.name}",
+                  "awslogs-region": "eu-south-1",
+                  "awslogs-stream-prefix": "web"
+                }
+              },
               "name": "web",
               "portMappings": [
                 {
@@ -389,7 +436,8 @@
           ],
           "tags": {
             "team": "platform"
-          }
+          },
+          "task_role_arn": "${app/app.task_role.arn}"
         }
       },
       {
@@ -602,6 +650,14 @@
         }
       },
       {
+        "key": "job.logs",
+        "type": "aws_cloudwatch_log_group",
+        "config": {
+          "name": "/ecs/clearsessions",
+          "retention_in_days": 30
+        }
+      },
+      {
         "key": "job.execution_role",
         "type": "aws_iam_role",
         "config": {
@@ -640,6 +696,47 @@
         }
       },
       {
+        "key": "job.execution_role_logs",
+        "type": "aws_iam_role_policy",
+        "config": {
+          "name": "write-logs",
+          "policy": {
+            "Statement": [
+              {
+                "Action": [
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents"
+                ],
+                "Effect": "Allow",
+                "Resource": "${cron/job.logs.arn}:*"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "role": "${cron/job.execution_role.name}"
+        }
+      },
+      {
+        "key": "job.task_role",
+        "type": "aws_iam_role",
+        "config": {
+          "assume_role_policy": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ecs-tasks.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "description": "Role of the clearsessions container, for the application's own permissions",
+          "name": "clearsessions-task"
+        }
+      },
+      {
         "key": "job.task",
         "type": "aws_ecs_task_definition",
         "config": {
@@ -652,6 +749,14 @@
               ],
               "essential": true,
               "image": "ghcr.io/acme/web:1.4.2",
+              "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                  "awslogs-group": "${cron/job.logs.name}",
+                  "awslogs-region": "eu-south-1",
+                  "awslogs-stream-prefix": "clearsessions"
+                }
+              },
               "name": "clearsessions",
               "secrets": [
                 {
@@ -668,7 +773,8 @@
           "network_mode": "awsvpc",
           "requires_compatibilities": [
             "FARGATE"
-          ]
+          ],
+          "task_role_arn": "${cron/job.task_role.arn}"
         }
       },
       {
@@ -711,7 +817,10 @@
               {
                 "Action": "iam:PassRole",
                 "Effect": "Allow",
-                "Resource": "${cron/job.execution_role.arn}"
+                "Resource": [
+                  "${cron/job.execution_role.arn}",
+                  "${cron/job.task_role.arn}"
+                ]
               }
             ],
             "Version": "2012-10-17"
@@ -958,13 +1067,7 @@
       },
       {
         "op": "set",
-        "key": "db.sg_ingress_private_a",
-        "path": "tags.env",
-        "value": "staging"
-      },
-      {
-        "op": "set",
-        "key": "db.sg_ingress_private_b",
+        "key": "db.sg_ingress_from_app",
         "path": "tags.env",
         "value": "staging"
       },
@@ -1033,6 +1136,18 @@
       },
       {
         "op": "set",
+        "key": "app.logs",
+        "path": "name",
+        "value": "/ecs/staging-web"
+      },
+      {
+        "op": "set",
+        "key": "app.logs",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
         "key": "app.execution_role",
         "path": "name",
         "value": "staging-web-execution"
@@ -1040,6 +1155,18 @@
       {
         "op": "set",
         "key": "app.execution_role",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.task_role",
+        "path": "name",
+        "value": "staging-web-task"
+      },
+      {
+        "op": "set",
+        "key": "app.task_role",
         "path": "tags.env",
         "value": "staging"
       },
@@ -1212,9 +1339,21 @@
       },
       {
         "op": "set",
+        "key": "job.logs",
+        "path": "name",
+        "value": "/ecs/staging-clearsessions"
+      },
+      {
+        "op": "set",
         "key": "job.execution_role",
         "path": "name",
         "value": "staging-clearsessions-execution"
+      },
+      {
+        "op": "set",
+        "key": "job.task_role",
+        "path": "name",
+        "value": "staging-clearsessions-task"
       },
       {
         "op": "set",
@@ -1245,6 +1384,17 @@
         "type": "aws_ecs_cluster",
         "config": {
           "name": "web",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
+        "key": "app.logs",
+        "type": "aws_cloudwatch_log_group",
+        "config": {
+          "name": "/ecs/web",
+          "retention_in_days": 30,
           "tags": {
             "team": "platform"
           }
@@ -1292,6 +1442,50 @@
         }
       },
       {
+        "key": "app.execution_role_logs",
+        "type": "aws_iam_role_policy",
+        "config": {
+          "name": "write-logs",
+          "policy": {
+            "Statement": [
+              {
+                "Action": [
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents"
+                ],
+                "Effect": "Allow",
+                "Resource": "${app/app.logs.arn}:*"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "role": "${app/app.execution_role.name}"
+        }
+      },
+      {
+        "key": "app.task_role",
+        "type": "aws_iam_role",
+        "config": {
+          "assume_role_policy": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ecs-tasks.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "description": "Role of the web app containers, for the application's own permissions",
+          "name": "web-task",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
         "key": "app.task",
         "type": "aws_ecs_task_definition",
         "config": {
@@ -1299,6 +1493,14 @@
             {
               "essential": true,
               "image": "ghcr.io/acme/web:1.4.2",
+              "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                  "awslogs-group": "${app/app.logs.name}",
+                  "awslogs-region": "eu-south-1",
+                  "awslogs-stream-prefix": "web"
+                }
+              },
               "name": "web",
               "portMappings": [
                 {
@@ -1324,7 +1526,8 @@
           ],
           "tags": {
             "team": "platform"
-          }
+          },
+          "task_role_arn": "${app/app.task_role.arn}"
         }
       },
       {
@@ -1542,6 +1745,17 @@
         }
       },
       {
+        "key": "app.logs",
+        "type": "aws_cloudwatch_log_group",
+        "config": {
+          "name": "/ecs/web",
+          "retention_in_days": 30,
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
         "key": "app.execution_role",
         "type": "aws_iam_role",
         "config": {
@@ -1583,6 +1797,50 @@
         }
       },
       {
+        "key": "app.execution_role_logs",
+        "type": "aws_iam_role_policy",
+        "config": {
+          "name": "write-logs",
+          "policy": {
+            "Statement": [
+              {
+                "Action": [
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents"
+                ],
+                "Effect": "Allow",
+                "Resource": "${app/app.logs.arn}:*"
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "role": "${app/app.execution_role.name}"
+        }
+      },
+      {
+        "key": "app.task_role",
+        "type": "aws_iam_role",
+        "config": {
+          "assume_role_policy": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ecs-tasks.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "description": "Role of the web app containers, for the application's own permissions",
+          "name": "web-task",
+          "tags": {
+            "team": "platform"
+          }
+        }
+      },
+      {
         "key": "app.task",
         "type": "aws_ecs_task_definition",
         "config": {
@@ -1590,6 +1848,14 @@
             {
               "essential": true,
               "image": "ghcr.io/acme/web:1.4.2",
+              "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                  "awslogs-group": "${app/app.logs.name}",
+                  "awslogs-region": "eu-south-1",
+                  "awslogs-stream-prefix": "web"
+                }
+              },
               "name": "web",
               "portMappings": [
                 {
@@ -1615,7 +1881,8 @@
           ],
           "tags": {
             "team": "platform"
-          }
+          },
+          "task_role_arn": "${app/app.task_role.arn}"
         }
       },
       {
@@ -1837,6 +2104,18 @@
       },
       {
         "op": "set",
+        "key": "app.logs",
+        "path": "name",
+        "value": "/ecs/staging-web"
+      },
+      {
+        "op": "set",
+        "key": "app.logs",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
         "key": "app.execution_role",
         "path": "name",
         "value": "staging-web-execution"
@@ -1844,6 +2123,18 @@
       {
         "op": "set",
         "key": "app.execution_role",
+        "path": "tags.env",
+        "value": "staging"
+      },
+      {
+        "op": "set",
+        "key": "app.task_role",
+        "path": "name",
+        "value": "staging-web-task"
+      },
+      {
+        "op": "set",
+        "key": "app.task_role",
         "path": "tags.env",
         "value": "staging"
       },

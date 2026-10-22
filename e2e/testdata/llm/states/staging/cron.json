@@ -2,6 +2,9 @@
   {"key": "job.cluster", "type": "aws_ecs_cluster", "config": {
     "name": "staging-cron",
     "tags": {"note": "sentinel-7f3a"}}},
+  {"key": "job.logs", "type": "aws_cloudwatch_log_group", "config": {
+    "name": "/ecs/staging-clearsessions",
+    "retention_in_days": 30}},
   {"key": "job.execution_role", "type": "aws_iam_role", "config": {
     "name": "staging-clearsessions-execution",
     "description": "Lets ECS start the clearsessions task and read the database secret",
@@ -14,6 +17,18 @@
     "policy": {
       "Version": "2012-10-17",
       "Statement": [{"Effect": "Allow", "Action": "secretsmanager:GetSecretValue", "Resource": "${database/db.instance.master_user_secret.0.secret_arn}"}]}}},
+  {"key": "job.execution_role_logs", "type": "aws_iam_role_policy", "config": {
+    "name": "write-logs",
+    "role": "${cron/job.execution_role.name}",
+    "policy": {
+      "Version": "2012-10-17",
+      "Statement": [{"Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents"], "Resource": "${cron/job.logs.arn}:*"}]}}},
+  {"key": "job.task_role", "type": "aws_iam_role", "config": {
+    "name": "staging-clearsessions-task",
+    "description": "Role of the clearsessions container, for the application's own permissions",
+    "assume_role_policy": {
+      "Version": "2012-10-17",
+      "Statement": [{"Effect": "Allow", "Principal": {"Service": "ecs-tasks.amazonaws.com"}, "Action": "sts:AssumeRole"}]}}},
   {"key": "job.task", "type": "aws_ecs_task_definition", "config": {
     "family": "staging-clearsessions",
     "requires_compatibilities": ["FARGATE"],
@@ -21,12 +36,14 @@
     "cpu": "256",
     "memory": "512",
     "execution_role_arn": "${cron/job.execution_role.arn}",
+    "task_role_arn": "${cron/job.task_role.arn}",
     "container_definitions": [{
       "name": "clearsessions",
       "image": "ghcr.io/acme/web:1.4.2",
       "essential": true,
       "command": ["python", "manage.py", "clearsessions"],
-      "secrets": [{"name": "DATABASE_URL", "valueFrom": "${database/db.instance.master_user_secret.0.secret_arn}"}]}]}},
+      "secrets": [{"name": "DATABASE_URL", "valueFrom": "${database/db.instance.master_user_secret.0.secret_arn}"}],
+      "logConfiguration": {"logDriver": "awslogs", "options": {"awslogs-group": "${cron/job.logs.name}", "awslogs-region": "eu-south-1", "awslogs-stream-prefix": "clearsessions"}}}]}},
   {"key": "job.scheduler_role", "type": "aws_iam_role", "config": {
     "name": "staging-clearsessions-scheduler",
     "description": "Lets EventBridge Scheduler run the clearsessions task",
@@ -41,7 +58,7 @@
       "Statement": [
         {"Effect": "Allow", "Action": "ecs:RunTask", "Resource": "${cron/job.task.arn}",
          "Condition": {"ArnEquals": {"ecs:cluster": "${cron/job.cluster.arn}"}}},
-        {"Effect": "Allow", "Action": "iam:PassRole", "Resource": "${cron/job.execution_role.arn}"}]}}},
+        {"Effect": "Allow", "Action": "iam:PassRole", "Resource": ["${cron/job.execution_role.arn}", "${cron/job.task_role.arn}"]}]}}},
   {"key": "job.schedule", "type": "aws_scheduler_schedule", "config": {
     "name": "staging-clearsessions",
     "description": "python manage.py clearsessions every night at 03:00, Rome time",

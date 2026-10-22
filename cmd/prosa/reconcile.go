@@ -42,6 +42,7 @@ type reconcileFlags struct {
 	events                     string
 	noCache, yes, noEvents     bool
 	requireEndpoint, noColor   bool
+	disableRules, replan       stringList         // --disable-rule, --replan (ADR-034)
 	ignore                     []string           // files of dir that are not intents
 	aws                        engine.AWSSettings // region and endpoint, from the environment
 }
@@ -77,6 +78,10 @@ func parseReconcileFlags(cmd string, args []string, stderr io.Writer) (reconcile
 		fs.StringVar(&f.model, "model", envOr("PROSA_MODEL", planner.DefaultModel), "model of the planner (also PROSA_MODEL)")
 		fs.StringVar(&f.patchModel, "patch-model", os.Getenv("PROSA_PATCH_MODEL"), "model of the planner for patches, --model when empty (also PROSA_PATCH_MODEL)")
 		fs.BoolVar(&f.noCache, "no-cache", false, "do not read or write the planner cache, nor resume an interrupted intent from its saved desired state")
+	}
+	if cmd == "plan" || cmd == "apply" {
+		fs.Var(&f.disableRules, "disable-rule", "ID of a rule to switch off for this run (repeatable; also rules/disabled.txt)")
+		fs.Var(&f.replan, "replan", "name of an intent already applied to review against the rules even if they did not change, keeping its fix even when it replaces or deletes a resource (repeatable)")
 	}
 	if cmd == "apply" {
 		fs.BoolVar(&f.yes, "yes", false, "apply without asking")
@@ -459,30 +464,60 @@ func reconcile(ctx context.Context, cmd string, args []string, stdin io.Reader, 
 	return 0
 }
 
-func runReconcile(ctx context.Context, cmd string, f reconcileFlags, stdin io.Reader, stdout, stderr io.Writer, src providerSource, psrc plannerSource, log *events.Log) error {
-	store, err := openStore(f)
-	if err != nil {
-		return err
-	}
+// buildEngine returns the engine of one plan or apply, without providers:
+// the rules (read first, so a bad rule stops the command before anything
+// is created or asked of a model), the planner and, with the LLM planner
+// only, the reviewer, each wrapped in the cache (unless --no-cache) and in
+// the event log. With fixtures there is no reviewer: --replan only warns.
+func (f reconcileFlags) buildEngine(store *state.Store, psrc plannerSource, rsrc reviewerSource, log *events.Log, stderr io.Writer) (*engine.Engine, error) {
 	e := f.newEngine(store)
+	var err error
+	if e.Rules, err = loadRules(f.dir, f.disableRules, stderr); err != nil {
+		return nil, err
+	}
+	e.Replan = f.replan
 	if f.baseState != "" {
 		if e.BaseState, err = state.Open(f.baseState, os.Getenv("PROSA_STATE_PASSPHRASE")); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	e.Observer, e.InFlight, e.NoResume = observer(log), inFlight, f.noCache
 	if f.fixtures != "" {
 		sp, err := engine.LoadFixtures(f.fixtures)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		e.Planner = fixturesPlanner(sp, log)
-	} else {
-		var pl engine.Planner = psrc(f.plannerSettings(), stderr)
-		if !f.noCache {
-			pl = &planner.Cached{Inner: pl, Dir: f.cacheDir, Model: f.model, PatchModel: f.patchModel}
+		if len(f.replan) > 0 {
+			fmt.Fprintln(stderr, "prosa: warning: --replan has no effect without a model (rules are not checked)")
 		}
-		e.Planner = withPlannerEvents(pl, log)
+		return e, nil
+	}
+	var pl engine.Planner = psrc(f.plannerSettings(), stderr)
+	if !f.noCache {
+		pl = &planner.Cached{Inner: pl, Dir: f.cacheDir, Model: f.model, PatchModel: f.patchModel}
+	}
+	e.Planner = withPlannerEvents(pl, log)
+	var rv engine.Reviewer = rsrc(f.plannerSettings())
+	if !f.noCache {
+		model := f.patchModel
+		if model == "" {
+			model = f.model
+		}
+		rv = &planner.CachedReviewer{Inner: rv, Dir: f.cacheDir, Model: model}
+	}
+	e.Reviewer = withReviewerEvents(rv, log)
+	return e, nil
+}
+
+func runReconcile(ctx context.Context, cmd string, f reconcileFlags, stdin io.Reader, stdout, stderr io.Writer, src providerSource, psrc plannerSource, log *events.Log) error {
+	store, err := openStore(f)
+	if err != nil {
+		return err
+	}
+	e, err := f.buildEngine(store, psrc, newReviewer, log, stderr)
+	if err != nil {
+		return err
 	}
 	get, closeProviders, err := src(f.aws)
 	if err != nil {

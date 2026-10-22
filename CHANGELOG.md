@@ -6,8 +6,13 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- Ten built-in AWS best-practice rules (network, encryption, backups, IAM, logging) in `rules/`, read by the planner; the catalog is `rules/README.md` (ADR-034).
+- A reviewer (the patch model) checks each planned state against the rules; the planner fixes what it flags before you see the plan. `--disable-rule ID`, exceptions written in the intent, `--replan INTENT`, and the `rules.review` event.
+
 ### Changed
 - Prosa now names its category **Infrastructure as Prompt** (it was "Infrastructure as Intent").
+- With `PROSA_AWS_ENDPOINT` set, the AWS provider now asks STS which account the credentials in use belong to, as it always does on real AWS (`skip_requesting_account_id` is no longer set): a security group reference in your own account then reads back as `sg-…`, not `<account>/sg-…`. Prosa never picks an account; a group in another account is used only when an intent asks for it. The emulator must serve STS (Moto and LocalStack do).
 
 ## [0.2.0] — 2026-10-20
 

@@ -24,22 +24,27 @@ var actionHeaders = map[Action]string{
 	Create: "will be created", Update: "will be updated in-place", Replace: "must be replaced", Delete: "will be destroyed",
 }
 
-// Render writes the plan for a human, in Terraform's shape: "Blocked:" and
-// one reason per line when intents are blocked; "No changes. ..." when
+// Render writes the plan for a human, in Terraform's shape: the rules lines
+// and a blank line (renderRules); "Blocked:" and one reason per line when
+// intents are blocked; "No changes. ..." when
 // nothing changes; otherwise one block per change that is not a no-op (its
 // header, its gate and drift as comments, the resource with the attributes
 // that change, see changeBody), then "Plan: N to add, M to change, K to
 // destroy." counting the changes that are not refused (a replace is one add
 // and one destroy). The refused changes follow under "Not applied:" with
 // their reason, then, for each advise intent, how to apply its changes
-// (ADR-022). Sensitive and write-only values are masked at any depth. The
-// output is byte-stable for the same plan.
+// (ADR-022), and last the plan's warnings, as "Warning: <text>". A plan
+// Blocked by the state store is that one line. Sensitive and write-only
+// values are masked at any depth. The output is byte-stable for the same
+// plan.
 func Render(w io.Writer, p *Plan, opts RenderOptions) {
 	st := style{opts.Color}
 	if p.Blocked != "" {
 		fmt.Fprintf(w, "Blocked: %s\n", p.Blocked)
 		return
 	}
+	renderRules(w, p.Rules)
+	defer renderWarnings(w, p)
 	if len(p.Blockers) > 0 {
 		fmt.Fprintln(w, "Blocked:")
 		for _, b := range p.Blockers {
@@ -82,9 +87,14 @@ func Render(w io.Writer, p *Plan, opts RenderOptions) {
 }
 
 // renderChange writes the block of one change: "# <intent>/<key> will be
-// ...", the gate and drift comments, then the resource and its body.
+// ..." (with "(rule <IDs>)" for a fix of the rules), the gate and drift
+// comments, then the resource and its body.
 func renderChange(w io.Writer, st style, s *provider.Schema, c Change) {
-	fmt.Fprintf(w, "  %s\n", st.paint(ansiBold, "# "+c.Intent+"/"+c.Key+" "+actionHeaders[c.Action]))
+	header := "# " + c.Intent + "/" + c.Key + " " + actionHeaders[c.Action]
+	if c.Rule != "" {
+		header += " (rule " + c.Rule + ")"
+	}
+	fmt.Fprintf(w, "  %s\n", st.paint(ansiBold, header))
 	for _, comment := range changeComments(c) {
 		fmt.Fprintf(w, "  # (%s)\n", comment)
 	}

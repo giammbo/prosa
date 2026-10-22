@@ -1,6 +1,6 @@
 {
-  "prompt_version": "m7-2",
-  "prompt_sha256": "90a0a259720edc1c0d8ff6da0fe9afe542e66a2f5012413c6f2fc6912225b386",
+  "prompt_version": "m8-3",
+  "prompt_sha256": "0c337d1f1609a45de84d3afea0d166d2fbacaf30a2c69c6a71bc470a4c367500",
   "turns": [
     {
       "id": "msg_01kryPnj8hH98oZYQ74dmXCG",
@@ -106,9 +106,21 @@
               },
               {
                 "op": "set",
+                "key": "job.logs",
+                "path": "name",
+                "value": "/ecs/staging-clearsessions"
+              },
+              {
+                "op": "set",
                 "key": "job.execution_role",
                 "path": "name",
                 "value": "staging-clearsessions-execution"
+              },
+              {
+                "op": "set",
+                "key": "job.task_role",
+                "path": "name",
+                "value": "staging-clearsessions-task"
               },
               {
                 "op": "set",
@@ -137,7 +149,7 @@
       "stop_details": null,
       "usage": {
         "input_tokens": 5600,
-        "output_tokens": 537,
+        "output_tokens": 593,
         "cache_creation_input_tokens": 0,
         "cache_read_input_tokens": 3708,
         "service_tier": "standard"

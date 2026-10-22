@@ -11,6 +11,17 @@
       }
     },
     {
+      "key": "app.logs",
+      "type": "aws_cloudwatch_log_group",
+      "config": {
+        "name": "/ecs/web",
+        "retention_in_days": 30,
+        "tags": {
+          "team": "platform"
+        }
+      }
+    },
+    {
       "key": "app.execution_role",
       "type": "aws_iam_role",
       "config": {
@@ -52,6 +63,50 @@
       }
     },
     {
+      "key": "app.execution_role_logs",
+      "type": "aws_iam_role_policy",
+      "config": {
+        "name": "write-logs",
+        "role": "${app/app.execution_role.name}",
+        "policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              "Resource": "${app/app.logs.arn}:*"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "app.task_role",
+      "type": "aws_iam_role",
+      "config": {
+        "name": "web-task",
+        "description": "Role of the web app containers, for the application's own permissions",
+        "assume_role_policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "tags": {
+          "team": "platform"
+        }
+      }
+    },
+    {
       "key": "app.task",
       "type": "aws_ecs_task_definition",
       "config": {
@@ -63,6 +118,7 @@
         "cpu": "256",
         "memory": "512",
         "execution_role_arn": "${app/app.execution_role.arn}",
+        "task_role_arn": "${app/app.task_role.arn}",
         "container_definitions": [
           {
             "name": "web",
@@ -79,7 +135,15 @@
                 "name": "DATABASE_URL",
                 "valueFrom": "${database/db.instance.master_user_secret.0.secret_arn}"
               }
-            ]
+            ],
+            "logConfiguration": {
+              "logDriver": "awslogs",
+              "options": {
+                "awslogs-group": "${app/app.logs.name}",
+                "awslogs-region": "eu-south-1",
+                "awslogs-stream-prefix": "web"
+              }
+            }
           }
         ],
         "tags": {

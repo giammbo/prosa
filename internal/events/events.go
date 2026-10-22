@@ -25,6 +25,7 @@ import (
 const (
 	RunStart      = "run.start"
 	PlannerResult = "planner.result"
+	RulesReview   = "rules.review"
 	PlanEvent     = "plan"
 	Approval      = "approval"
 	ApplyOp       = "apply.op"
@@ -179,8 +180,26 @@ func (l *Log) PlannerResult(r planner.Result) {
 	}})
 }
 
+// RulesReview records a review of an intent against the rules (ADR-034): the
+// IDs of the rules it was given, the violations as "<ID> <key>", and how the
+// reviewer answered. Never the reasons, which are the model's free text.
+func (l *Log) RulesReview(r planner.Result, ruleIDs, violations []string) {
+	if ruleIDs == nil {
+		ruleIDs = []string{}
+	}
+	if violations == nil {
+		violations = []string{}
+	}
+	l.Emit(Event{Type: RulesReview, Intent: r.Intent, Data: map[string]any{
+		"rules": ruleIDs, "violations": violations, "dropped": r.Dropped,
+		"turns": r.Turns, "model": r.Model, "served_by": r.ServedBy, "cached": r.Cached,
+		"usage": map[string]any{"input": r.Usage.Input, "output": r.Usage.Output, "cache_read": r.Usage.CacheRead, "cache_creation": r.Usage.CacheCreation},
+	}})
+}
+
 // Planned implements engine.Observer: the changes with their action and
-// gate, the drifted attributes by name, the blockers; never a value.
+// gate, the drifted attributes by name, the rules a fix answers, the
+// blockers; never a value.
 func (l *Log) Planned(p *engine.Plan) {
 	changes := []map[string]any{}
 	unchanged := 0
@@ -195,6 +214,9 @@ func (l *Log) Planned(p *engine.Plan) {
 		}
 		if len(c.DriftAttrs) > 0 {
 			ch["drift_attrs"] = c.DriftAttrs
+		}
+		if c.Rule != "" {
+			ch["rule"] = c.Rule
 		}
 		changes = append(changes, ch)
 	}

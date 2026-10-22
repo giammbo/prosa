@@ -244,7 +244,7 @@ func TestPlanUnchangedIntentSkipsPlanner(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	Render(&buf, p, RenderOptions{})
-	if buf.String() != "No changes. Your infrastructure matches the intents.\n" {
+	if buf.String() != "rules: not checked (no model)\n\nNo changes. Your infrastructure matches the intents.\n" {
 		t.Fatalf("render = %q", buf.String())
 	}
 }
@@ -286,7 +286,8 @@ func TestPlanRecreatesResourceGoneOutOfBand(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	Render(&buf, p, RenderOptions{})
-	want := "Prosa will perform the following actions:\n\n" +
+	want := "rules: not checked (no model)\n\n" +
+		"Prosa will perform the following actions:\n\n" +
 		"  # app/net will be created\n" +
 		"  # (needs approval)\n" +
 		"  # (drifted outside Prosa: the object is gone)\n" +
@@ -327,7 +328,8 @@ func TestPlanRemovedIntentDeletesReverseOrder(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	Render(&buf, p, RenderOptions{})
-	want := "Prosa will perform the following actions:\n\n" +
+	want := "rules: not checked (no model)\n\n" +
+		"Prosa will perform the following actions:\n\n" +
 		"  # old/db will be destroyed\n" +
 		"  # (needs approval: destroy)\n" +
 		"  - resource \"test_db\" \"db\" {\n" +
@@ -445,7 +447,8 @@ func TestPlanReplaceUsesCreatePlan(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	Render(&buf, p, RenderOptions{})
-	want := "Prosa will perform the following actions:\n\n" +
+	want := "rules: not checked (no model)\n\n" +
+		"Prosa will perform the following actions:\n\n" +
 		"  # app/net must be replaced\n" +
 		"  # (needs approval: destroy)\n" +
 		"-/+ resource \"test_net\" \"net\" {\n" +
@@ -473,7 +476,8 @@ func TestRenderSensitiveAndNoChanges(t *testing.T) {
 	}}
 	var buf bytes.Buffer
 	Render(&buf, p, RenderOptions{})
-	want := "Prosa will perform the following actions:\n\n" +
+	want := "rules: not checked (no model)\n\n" +
+		"Prosa will perform the following actions:\n\n" +
 		"  # app/db will be updated in-place\n" +
 		"  ~ resource \"test_db\" \"db\" {\n" +
 		"        id       = \"test_db-1\"\n" +
@@ -486,7 +490,7 @@ func TestRenderSensitiveAndNoChanges(t *testing.T) {
 	}
 	buf.Reset()
 	Render(&buf, &Plan{}, RenderOptions{})
-	if buf.String() != "No changes. Your infrastructure matches the intents.\n" {
+	if buf.String() != "rules: not checked (no model)\n\nNo changes. Your infrastructure matches the intents.\n" {
 		t.Fatalf("empty plan render = %q", buf.String())
 	}
 }
@@ -535,7 +539,7 @@ func TestAWSProviderConfigEndpoints(t *testing.T) {
 		t.Fatalf("endpoints block set: the endpoint goes through AWS_ENDPOINT_URL: %v", m)
 	}
 	if m["region"] != "eu-south-1" || m["access_key"] != "test" || m["secret_key"] != "test" ||
-		m["skip_credentials_validation"] != true || m["skip_requesting_account_id"] != true ||
+		m["skip_credentials_validation"] != true || m["skip_requesting_account_id"] != false ||
 		m["skip_region_validation"] != true || m["skip_metadata_api_check"] != "true" || len(m) != 7 {
 		t.Fatalf("config = %v", m)
 	}

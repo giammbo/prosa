@@ -1,0 +1,48 @@
+{
+  "prompt_version": "r1",
+  "prompt_sha256": "7217354285532ee82e6e7f43fb1eb811fceea218b2d27c19a38fbcb0a68f0f36",
+  "turns": [
+    {
+      "id": "msg_019wZ4uD7Fjgz21f2RjAW1ff",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EonY4E+JAMRqEgpQ2YeLdiDMWBwf4uPg+gTqK4/4ry3ebhRAWWs3K6e3mlFe381+xbirlrMdn6ZKgmPCKEMFdzgeREr0yfhvLWAVSfztImWiro/CU3iLxs0ksU9TpUiEo3QOgcLW6h7xuAnD40p5Ha5NC8HZCwJ3VYcKq8P2YYY2oIFJV7S5059rndsZdFi5fei3SWA3Hbi7qfA0K0zZFzyAGMyggJ+9ker9BUpnf7bdMkDbQz"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01yTU9wVFEZ8miFJ8cwKqxWS",
+          "name": "submit_review",
+          "input": {
+            "violations": [
+              {
+                "key": "db.sg_ingress_private_a",
+                "reason": "It admits Postgres from the CIDR of the private subnet in eu-south-1a; the database's port must be open only to the security group of its clients: reference net.app_sg by its id instead.",
+                "rule": "AWS-NET-001"
+              },
+              {
+                "key": "db.sg_ingress_private_b",
+                "reason": "It admits Postgres from the CIDR of the private subnet in eu-south-1b; the database's port must be open only to the security group of its clients: reference net.app_sg by its id instead.",
+                "rule": "AWS-NET-001"
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 900,
+        "output_tokens": 481,
+        "cache_creation_input_tokens": 2360,
+        "cache_read_input_tokens": 0,
+        "service_tier": "standard"
+      }
+    }
+  ]
+}

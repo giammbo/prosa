@@ -154,9 +154,12 @@ func (a *applier) setPending(name string, st *state.IntentState) error {
 // leaves the lock and the store; any other gets its new hash, its desired
 // resources and its checks in the lock, and in its state its text (Body, for the planner),
 // no Pending and, when something was applied, the catch-up of its unchanged resources;
-// the state is saved only if that changed it. An intent whose changes were
-// all skipped and whose hash is unchanged writes nothing, and so does a held
-// one: what of it was applied is already in the lock and the state.
+// the state is saved only if that changed it; with a reviewer, its rules_hash
+// is the one the plan settled (settleRules), without one a rewritten intent
+// loses it. An intent whose changes were
+// all skipped and whose hash is unchanged writes nothing but a new
+// rules_hash, and a held one nothing: what of it was applied is already in
+// the lock and the state.
 func (a *applier) finish(name string) error {
 	if a.held[name] {
 		return nil
@@ -175,7 +178,7 @@ func (a *applier) finish(name string) error {
 		return nil
 	}
 	if !a.executed[name] && !a.stale[name] {
-		return nil
+		return a.saveRulesHash(name)
 	}
 	i := slices.IndexFunc(a.p.intents, func(it intent.Intent) bool { return it.Name == name })
 	it := a.p.intents[i]
@@ -214,6 +217,12 @@ func (a *applier) finish(name string) error {
 	li.IntentHash, li.DependsOn, li.Resources = a.p.intentHash(it), it.DependsOn, resources
 	li.Checks = a.p.checks[name]
 	li.BaseHash, li.Patch = a.p.baseHashes[name], a.p.patches[name] // none without a base
+	switch {
+	case a.p.reviewer != nil:
+		li.RulesHash = a.p.rulesHashes[name] // none when its state was not reviewed
+	case a.stale[name]:
+		li.RulesHash = "" // rewritten without a review: reviewed next time
+	}
 	li.ReconciledAt = a.now().UTC().Truncate(time.Second)
 	if err := a.saveLock(); err != nil {
 		return err
@@ -223,6 +232,16 @@ func (a *applier) finish(name string) error {
 		return a.e.writeBaseText(name, it.Body)
 	}
 	return nil
+}
+
+// saveRulesHash writes the rules_hash of name, an intent reused as it is,
+// when it is its only change to the lock (rulesStale); nothing otherwise.
+func (a *applier) saveRulesHash(name string) error {
+	if !a.p.rulesStale(name) {
+		return nil
+	}
+	a.lockIntent(name).RulesHash = a.p.rulesHashes[name]
+	return a.saveLock()
 }
 
 func (a *applier) now() time.Time {

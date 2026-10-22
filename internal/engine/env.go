@@ -53,9 +53,17 @@ func (e *Engine) recoverCommand() string {
 	if e.Env == nil {
 		return "prosa recover <dir>"
 	}
-	file := e.EnvFile
-	if file == "" {
-		file = e.Env.Path
+	return "prosa recover --env " + e.envFileArg()
+}
+
+// envFileArg is the environment file as a command names it: EnvFile, else
+// Env.Path; "" without an environment.
+func (e *Engine) envFileArg() string {
+	if e.Env == nil {
+		return ""
 	}
-	return "prosa recover --env " + file
+	if e.EnvFile != "" {
+		return e.EnvFile
+	}
+	return e.Env.Path
 }

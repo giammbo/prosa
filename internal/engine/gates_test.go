@@ -349,7 +349,8 @@ func TestRenderGates(t *testing.T) {
 		}
 		return out + "  " + sym + " resource \"" + typ + "\" \"" + key + "\" {\n    }\n\n"
 	}
-	want := "Prosa will perform the following actions:\n\n" +
+	want := "rules: not checked (no model)\n\n" +
+		"Prosa will perform the following actions:\n\n" +
 		block("old/net will be destroyed", "needs approval: destroy", "-", "test_net", "net") +
 		block("base/net will be created", "not applied: advise", "+", "test_net", "net") +
 		block("app/db will be created", "not applied: depends on base/net", "+", "test_db", "db") +

@@ -76,18 +76,9 @@
     "description": "Postgres of staging, reachable only from the application",
     "vpc_id": "${database/net.vpc.id}",
     "tags": {"team": "platform", "env": "staging"}}},
-  {"key": "db.sg_ingress_private_a", "type": "aws_vpc_security_group_ingress_rule", "config": {
+  {"key": "db.sg_ingress_from_app", "type": "aws_vpc_security_group_ingress_rule", "config": {
     "security_group_id": "${database/db.sg.id}",
-    "description": "Postgres from the private subnet in eu-south-1a",
-    "cidr_ipv4": "${database/net.subnet_private_a.cidr_block}",
-    "ip_protocol": "tcp",
-    "from_port": 5432,
-    "to_port": 5432,
-    "tags": {"team": "platform", "env": "staging"}}},
-  {"key": "db.sg_ingress_private_b", "type": "aws_vpc_security_group_ingress_rule", "config": {
-    "security_group_id": "${database/db.sg.id}",
-    "description": "Postgres from the private subnet in eu-south-1b",
-    "cidr_ipv4": "${database/net.subnet_private_b.cidr_block}",
+    "referenced_security_group_id": "${database/net.app_sg.id}",
     "ip_protocol": "tcp",
     "from_port": 5432,
     "to_port": 5432,

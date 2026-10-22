@@ -110,8 +110,8 @@ func usage(w io.Writer) {
 	fmt.Fprint(w, `usage:
   prosa version
   prosa init [<dir>]
-  prosa plan [--env FILE] [--ignore FILES] [--lock FILE] [--state DIR] [--fixtures FILE | --model NAME [--patch-model NAME]] [--no-cache] [--events FILE | --no-events] [--require-endpoint] [--no-color] [<dir>]
-  prosa apply [--yes] [--env FILE] [--ignore FILES] [--lock FILE] [--state DIR] [--fixtures FILE | --model NAME [--patch-model NAME]] [--no-cache] [--events FILE | --no-events] [--require-endpoint] [--no-color] [<dir>]
+  prosa plan [--env FILE] [--ignore FILES] [--lock FILE] [--state DIR] [--fixtures FILE | --model NAME [--patch-model NAME]] [--no-cache] [--disable-rule ID]... [--replan NAME]... [--events FILE | --no-events] [--require-endpoint] [--no-color] [<dir>]
+  prosa apply [--yes] [--env FILE] [--ignore FILES] [--lock FILE] [--state DIR] [--fixtures FILE | --model NAME [--patch-model NAME]] [--no-cache] [--disable-rule ID]... [--replan NAME]... [--events FILE | --no-events] [--require-endpoint] [--no-color] [<dir>]
   prosa check [--env FILE] [--ignore FILES] [--lock FILE] [--state DIR] [--events FILE | --no-events] [--require-endpoint] [--no-color] [<dir>]
   prosa recover [--env FILE] [--ignore FILES] [--lock FILE] [--state DIR] [--events FILE | --no-events] [--require-endpoint] [--no-color] [<dir>]
   prosa debug schema <namespace/name>[@version] <resource_type>

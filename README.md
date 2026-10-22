@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Go](https://img.shields.io/github/go-mod/go-version/giammbo/prosa)](go.mod)
 
-![prosa plan on the Moto demo](assets/plan.svg)
+![prosa plan on the Moto demo](https://raw.githubusercontent.com/giammbo/prosa/main/assets/plan.svg)
 
 > **Status: early.** Tested end to end against **Moto** (an AWS emulator) and once on **real AWS** with the real model: a web app on ECS Fargate behind a load balancer, a Postgres RDS and a nightly job, created at the smallest sizes, resized, scaled and destroyed (46 resources, nothing left behind). Use a sandbox account, not one you care about.
 
@@ -63,6 +63,7 @@ Terraform/OpenTofu providers are the drivers (over gRPC, no HCL). Claude plans t
 - **M5** demo 1 as a script (`demo/moto/run.sh`) and the preflight for a run on real AWS (`demo/aws/preflight.sh`).
 - **M6** environments as prose files (ADR-029): `--env`, per-environment lock and state, region and credentials from the AWS CLI, no `prosa.yaml`.
 - **M7** few tokens and any LLM (ADR-030, ADR-031): the base is planned once and an environment is a patch on it, with `## <intent>` sections in the environment file; `anthropic` or `openai` backend (local models).
+- **M8** best-practice rules (ADR-034): ten AWS rules shipped with the binary, a reviewer that checks every planned state before you see it, exceptions, `--disable-rule`, `--replan`.
 
 Tested on **Moto** (an AWS emulator): the demo 1 script, from plan to cleanup, with the simulated desired states in `demo/fixtures.json`; the e2e tests run under the same conditions (their model conversations are simulated).
 
@@ -130,7 +131,7 @@ With `openai`, `--model` (or `PROSA_MODEL`) is required, otherwise exit 2: the d
 
 ```
 prosa init    [<dir>]
-prosa plan    [--env FILE] [--ignore a.md,b.md] [--lock F] [--state D] [--fixtures F | --model M [--patch-model M]] [--no-cache] [--events F | --no-events] [--require-endpoint] [--no-color] [<dir>]
+prosa plan    [--env FILE] [--ignore a.md,b.md] [--lock F] [--state D] [--fixtures F | --model M [--patch-model M]] [--no-cache] [--disable-rule ID]... [--replan NAME]... [--events F | --no-events] [--require-endpoint] [--no-color] [<dir>]
 prosa apply   [--yes] ...same options as plan... [<dir>]
 prosa check   [--env FILE] [--ignore a.md,b.md] [--lock F] [--state D] [--events F | --no-events] [--require-endpoint] [--no-color] [<dir>]
 prosa recover [--env FILE] [--ignore a.md,b.md] [--lock F] [--state D] [--events F | --no-events] [--require-endpoint] [--no-color] [<dir>]
@@ -142,6 +143,8 @@ prosa debug schema <namespace/name>[@version] <resource_type>
 - `init`: creates the `envs/` folder and a `.gitignore` that excludes `.prosa/` (or adds the line to the existing one); it does not touch what exists.
 - `plan`: computes and shows the plan (create, update, drift, destructions), without changing anything.
 - `apply`: shows the plan and, like Terraform, asks once for the whole plan (`Do you want to perform these actions? Only 'yes' will be accepted:`) before any change; anything but `yes` cancels and nothing changes. The changes that policy or the autonomy level put under approval (destruction by default) are listed in the question. With no changes it asks nothing. `--yes` skips the question (like `-auto-approve`); `observe` and `advise` intents are never applied, even with `--yes`.
+- `--disable-rule ID` (`plan`, `apply`, repeatable): switches a best-practice rule off for this run (see Rules).
+- `--replan INTENT` (`plan`, `apply`, repeatable): reviews an intent already applied against the rules even if they did not change, and keeps its fix even when the fix replaces or deletes a resource.
 - `check`: runs the checks written in the intents (`pass`, `skipped`, `fail`).
 - `recover`: after an interruption (Ctrl-C, crash) rebuilds the lock from the state store, for the intents whose state is ahead of the lock (and redoes it if it is missing or empty); then rerun `plan`.
 - `debug schema`: prints the schema of a provider resource.
@@ -168,6 +171,16 @@ Gates and drift are comments under the heading (`# (needs approval: destroy)`, `
 
 Exit codes: 0 ok, 1 error, 2 wrong usage. A second Ctrl-C forces the exit (code 130) and the resource in progress may exist on the cloud without being recorded: `recover` does not find it, look for it by tag `prosa/intent`.
 
+## Rules
+
+Prosa ships best-practice rules, written in prose and listed in [rules/README.md](rules/README.md). The planner reads the ones that apply to the resources it plans, and a reviewer checks the plan against them before you see it.
+
+- Switch one off with `--disable-rule ID`, or list it in `rules/disabled.txt`.
+- Make an exception by naming the rule ID in the prose of the intent, with the reason.
+- Add your own as Markdown files under `rules/` in the project, with your own ID prefix (e.g. `ACME-NET-001`), never the provider's (`AWS-`), so that a future Prosa release cannot collide with them.
+- The reviewer runs on the patch model; with `--fixtures` the plan opens with `rules: not checked (no model)`.
+- When a new release brings a rule that infrastructure already applied breaks, the next plan proposes the fix if it changes resources in place; a fix that would replace or delete a resource stays a warning until you run `prosa plan --replan <intent>`.
+
 ## Files, state and security
 
 Everything lives in the project `<dir>`. With `--env envs/<name>.md` (ADR-029) lock, state and events belong to the environment; without it, the base paths apply.
@@ -192,6 +205,6 @@ The engine adds the `prosa/intent` tag to every resource and, with `--env`, `pro
 
 ## Layout
 
-`cmd/prosa` is the CLI, `internal/` the engine, planner, provider host, lock and state store, `e2e/` the tests against Moto. Design notes are maintained privately. The example project is `examples/`, the one adapted for real AWS is `demo/aws/project/` (base plus `envs/staging.md`).
+`cmd/prosa` is the CLI, `internal/` the engine, planner, provider host, lock and state store, `rules/` the built-in best-practice rules and their catalog, `e2e/` the tests against Moto. Design notes are maintained privately. The example project is `examples/`, the one adapted for real AWS is `demo/aws/project/` (base plus `envs/staging.md`).
 
 Tests: `go test ./... && go vet ./...` (offline); e2e against Moto: `PROSA_E2E=1 go test ./e2e/ -count=1 -timeout 50m`.

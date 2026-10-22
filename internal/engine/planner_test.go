@@ -247,7 +247,7 @@ func TestBlockersBlockPlan(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	Render(&buf, p, RenderOptions{})
-	if out := buf.String(); !strings.HasPrefix(out, "Blocked:\n  app: three replicas contradict the check\n  app: second reason\n") {
+	if out := buf.String(); !strings.HasPrefix(out, "rules: not checked (no model)\n\nBlocked:\n  app: three replicas contradict the check\n  app: second reason\n") {
 		t.Fatalf("render = %q", out)
 	}
 	err := e.apply(p, func(*Plan) bool { t.Error("approve called for a blocked plan"); return true })

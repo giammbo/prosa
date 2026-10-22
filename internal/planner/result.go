@@ -11,11 +11,13 @@ type Usage struct {
 // log (ADR-023). It holds counts, model names and token usage: never the
 // conversation, the thinking or any value.
 //
-// Job is JobPlan or JobPatch (ADR-030); Backend the backend's name (empty
-// for an answer from the cache); Model the model requested for the job;
-// ServedBy the one that answered the last turn, as the backend reports it
-// (Fallback is true when a server-side fallback served any turn). Cached
-// marks an answer read from the cache: no model was called.
+// Job is JobPlan or JobPatch (ADR-030), or JobReview for the reviewer
+// (ADR-034); Backend the backend's name (empty for an answer from the
+// cache); Model the model requested for the job; ServedBy the one that
+// answered the last turn, as the backend reports it (Fallback is true when a
+// server-side fallback served any turn). Cached marks an answer read from
+// the cache: no model was called. Dropped counts the violations of a review
+// that named a rule or a resource not in its input, and were dropped.
 type Result struct {
 	Intent   string
 	Job      string
@@ -26,11 +28,13 @@ type Result struct {
 	ServedBy string
 	Fallback bool
 	Cached   bool
+	Dropped  int
 	Usage    Usage
 }
 
-// ResultReporter is implemented by the planners that know how their last
-// Plan went (LLM, Cached, and wrappers of them). Plans are sequential.
+// ResultReporter is implemented by the planners and reviewers that know how
+// their last Plan or Review went (LLM, Cached, Reviewer, CachedReviewer, and
+// wrappers of them). Plans and reviews are sequential.
 type ResultReporter interface {
 	LastResult() Result
 }

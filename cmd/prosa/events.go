@@ -100,3 +100,37 @@ func withPlannerEvents(pl engine.Planner, log *events.Log) engine.Planner {
 	}
 	return eventPlanner{pl, log}
 }
+
+// eventReviewer records the rules.review of every Review of inner, when
+// inner reports a result: the rule IDs it was given and the violations it
+// found (rule and key), taken from the input and the answer.
+type eventReviewer struct {
+	inner engine.Reviewer
+	log   *events.Log
+}
+
+func (r eventReviewer) Review(ctx context.Context, in engine.ReviewInput) ([]engine.Violation, error) {
+	vs, err := r.inner.Review(ctx, in)
+	if rr, ok := r.inner.(planner.ResultReporter); ok {
+		if res := rr.LastResult(); res.Intent != "" {
+			ids := make([]string, len(in.Rules))
+			for i, rule := range in.Rules {
+				ids[i] = rule.ID
+			}
+			found := make([]string, len(vs))
+			for i, v := range vs {
+				found[i] = v.Rule + " " + v.Key
+			}
+			r.log.RulesReview(res, ids, found)
+		}
+	}
+	return vs, err
+}
+
+// withReviewerEvents wraps rv so that it records its results in log (nil: rv).
+func withReviewerEvents(rv engine.Reviewer, log *events.Log) engine.Reviewer {
+	if log == nil {
+		return rv
+	}
+	return eventReviewer{rv, log}
+}
